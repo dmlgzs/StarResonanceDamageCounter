@@ -4,6 +4,8 @@ const winston = require("winston");
 const net = require('net');
 const zlib = require('zlib');
 const express = require('express');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 const pb = require('./algo/pb');
 const Readable = require("stream").Readable;
 const Cap = cap.Cap;
@@ -11,6 +13,13 @@ const decoders = cap.decoders;
 const PROTOCOL = decoders.PROTOCOL;
 const print = console.log;
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -55,6 +64,14 @@ let dps_window = {};
 let damage_time = {};
 let realtime_dps = {};
 
+// WebSocket连接管理
+let connectedClients = new Set();
+
+// 数据更新标志，用于批量推送
+let dataChanged = false;
+let lastPushTime = 0;
+const PUSH_THROTTLE_MS = 100; // 限制推送频率为100ms
+
 async function main() {
     print('Welcome to use Damage Counter for Star Resonance by Dimole!');
     print('Version: V2.1');
@@ -86,32 +103,8 @@ async function main() {
         ]
     });
 
-    //瞬时DPS
-    setInterval(() => {
-        const now = Date.now();
-        for (const uid of Object.keys(dps_window)) {
-            while (dps_window[uid].length > 0 && now - dps_window[uid][0].time > 1000) {
-                dps_window[uid].shift();
-            }
-            if (!realtime_dps[uid]) {
-                realtime_dps[uid] = {
-                    value: 0,
-                    max: 0,
-                }
-            }
-            realtime_dps[uid].value = 0;
-            for (const b of dps_window[uid]) {
-                realtime_dps[uid].value += b.damage;
-            }
-            if (realtime_dps[uid].value > realtime_dps[uid].max) {
-                realtime_dps[uid].max = realtime_dps[uid].value;
-            }
-        }
-    }, 100);
-
-    //express
-    app.use(express.static('public'));
-    app.get('/api/data', (req, res) => {
+    // 数据处理函数
+    function generateUserData() {
         const user = {};
         for (const uid of Object.keys(total_damage)) {
             if (!user[uid]) user[uid] = {
@@ -139,9 +132,69 @@ async function main() {
             user[uid].realtime_dps = realtime_dps[uid] ? realtime_dps[uid].value : 0;
             user[uid].realtime_dps_max = realtime_dps[uid] ? realtime_dps[uid].max : 0;
         }
+        return user;
+    }
+
+    // 推送数据到所有连接的客户端
+    function pushDataToClients() {
+        if (connectedClients.size > 0) {
+            const userData = generateUserData();
+            io.emit('dataUpdate', {
+                code: 0,
+                user: userData,
+                timestamp: Date.now()
+            });
+        }
+    }
+
+    //瞬时DPS计算和数据推送
+    setInterval(() => {
+        const now = Date.now();
+        let hasRealtimeUpdate = false;
+        
+        for (const uid of Object.keys(dps_window)) {
+            while (dps_window[uid].length > 0 && now - dps_window[uid][0].time > 1000) {
+                dps_window[uid].shift();
+            }
+            if (!realtime_dps[uid]) {
+                realtime_dps[uid] = {
+                    value: 0,
+                    max: 0,
+                }
+            }
+            const oldValue = realtime_dps[uid].value;
+            realtime_dps[uid].value = 0;
+            for (const b of dps_window[uid]) {
+                realtime_dps[uid].value += b.damage;
+            }
+            if (realtime_dps[uid].value > realtime_dps[uid].max) {
+                realtime_dps[uid].max = realtime_dps[uid].value;
+            }
+            
+            // 检查是否有实时数据变化
+            if (oldValue !== realtime_dps[uid].value) {
+                hasRealtimeUpdate = true;
+            }
+        }
+        
+        // 如果有数据变化或实时DPS更新，推送数据
+        if ((dataChanged || hasRealtimeUpdate) && now - lastPushTime >= PUSH_THROTTLE_MS) {
+            pushDataToClients();
+            dataChanged = false;
+            lastPushTime = now;
+        }
+    }, 50); // 更频繁的检查，但有推送限制
+
+    //express
+    app.use(express.static('public'));
+    
+    // 保持API兼容性，但优先使用WebSocket
+    app.get('/api/data', (req, res) => {
+        const userData = generateUserData();
         const data = {
             code: 0,
-            user,
+            user: userData,
+            timestamp: Date.now()
         };
         res.json(data);
     });
@@ -152,13 +205,97 @@ async function main() {
         damage_time = {};
         realtime_dps = {};
         logger.info('Statistics have been cleared!');
+        
+        // 通知所有WebSocket客户端数据已清空
+        io.emit('dataCleared', {
+            code: 0,
+            msg: 'Statistics have been cleared!',
+            timestamp: Date.now()
+        });
+        
         res.json({
             code: 0,
             msg: 'Statistics have been cleared!',
         });
     });
-    app.listen(8989, () => {
+
+    // WebSocket连接处理
+    io.on('connection', (socket) => {
+        logger.info(`WebSocket client connected: ${socket.id}`);
+        connectedClients.add(socket.id);
+        
+        // 立即发送当前数据给新连接的客户端
+        const userData = generateUserData();
+        socket.emit('dataUpdate', {
+            code: 0,
+            user: userData,
+            timestamp: Date.now()
+        });
+        
+        // 处理客户端请求清空数据
+        socket.on('clearData', () => {
+            try {
+                total_damage = {};
+                total_count = {};
+                dps_window = {};
+                damage_time = {};
+                realtime_dps = {};
+                logger.info('Statistics cleared via WebSocket');
+                
+                io.emit('dataCleared', {
+                    code: 0,
+                    msg: 'Statistics have been cleared!',
+                    timestamp: Date.now()
+                });
+            } catch (error) {
+                logger.error('Error clearing data via WebSocket:', error);
+                socket.emit('error', {
+                    code: 1,
+                    msg: 'Failed to clear data',
+                    error: error.message
+                });
+            }
+        });
+        
+        // 处理心跳检测
+        socket.on('ping', () => {
+            socket.emit('pong', { timestamp: Date.now() });
+        });
+        
+        // 处理断开连接
+        socket.on('disconnect', (reason) => {
+            logger.info(`WebSocket client disconnected: ${socket.id}, reason: ${reason}`);
+            connectedClients.delete(socket.id);
+        });
+        
+        // 处理连接错误
+        socket.on('error', (error) => {
+            logger.error(`WebSocket error for client ${socket.id}:`, error);
+            connectedClients.delete(socket.id);
+        });
+    });
+
+    // 监控WebSocket连接健康状态
+    setInterval(() => {
+        const connectedCount = connectedClients.size;
+        if (connectedCount > 0) {
+            logger.debug(`Active WebSocket connections: ${connectedCount}`);
+        }
+        
+        // 清理无效连接
+        const validClients = new Set();
+        for (const clientId of connectedClients) {
+            const clientSocket = io.sockets.sockets.get(clientId);
+            if (clientSocket && clientSocket.connected) {
+                validClients.add(clientId);
+            }
+        }
+        connectedClients = validClients;
+    }, 30000); // 每30秒检查一次
+
+    server.listen(8989, () => {
         logger.info('Web Server started at http://localhost:8989');
+        logger.info('WebSocket server is running on the same port');
     });
 
     logger.info('Welcome!');
@@ -263,6 +400,9 @@ async function main() {
                                         } else {
                                             damage_time[operator_uid][0] = Date.now();
                                         }
+                                        
+                                        // 标记数据已更新，用于WebSocket推送
+                                        dataChanged = true;
                                         let extra = [];
                                         if (isCrit) extra.push('Crit');
                                         if (luckyValue) extra.push('Lucky');

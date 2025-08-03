@@ -218,13 +218,70 @@
 
     <footer style="margin-top: 40px; font-size: 14px; color: #888;">Copyright © 2025 Made with ❤️ by <a href="https://dml.ink" target="_blank">Dimole</a></footer>
 
+    <!-- Socket.io客户端库 -->
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         let currentSortMode = 'uid'; // 默认按UID排序
+        let socket = null;
+        let connectionStatus = 'disconnected';
+        let reconnectInterval = null;
+        let lastDataUpdate = 0;
 
-        async function fetchDataAndUpdateTables() {
+        // 连接状态指示器
+        function createConnectionIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'connectionIndicator';
+            indicator.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: bold;
+                z-index: 10000;
+                transition: all 0.3s ease;
+                color: white;
+            `;
+            document.body.appendChild(indicator);
+            return indicator;
+        }
+
+        const connectionIndicator = createConnectionIndicator();
+
+        function updateConnectionStatus(status, message = '') {
+            connectionStatus = status;
+            switch (status) {
+                case 'connected':
+                    connectionIndicator.style.backgroundColor = '#4CAF50';
+                    connectionIndicator.textContent = '🟢 已连接';
+                    break;
+                case 'connecting':
+                    connectionIndicator.style.backgroundColor = '#FF9800';
+                    connectionIndicator.textContent = '🟡 连接中...';
+                    break;
+                case 'disconnected':
+                    connectionIndicator.style.backgroundColor = '#f44336';
+                    connectionIndicator.textContent = '🔴 已断开';
+                    break;
+                case 'error':
+                    connectionIndicator.style.backgroundColor = '#9C27B0';
+                    connectionIndicator.textContent = '🟣 连接错误';
+                    break;
+            }
+            if (message) {
+                connectionIndicator.title = message;
+            }
+        }
+
+        function updateTables(data) {
             try {
-                const res = await fetch('/api/data');
-                const data = await res.json();
+                if (!data || !data.user) {
+                    console.warn('收到无效数据:', data);
+                    return;
+                }
+
+                lastDataUpdate = Date.now();
                 const damageTable = document.getElementById('damageTable').querySelector('tbody');
                 damageTable.innerHTML = '';
                 
@@ -250,9 +307,120 @@
                     damageTable.innerHTML += row;
                 }
             } catch (err) {
-                console.error('获取数据失败：', err);
+                console.error('更新表格失败：', err);
             }
         }
+
+        // WebSocket连接管理
+        function connectWebSocket() {
+            if (socket && socket.connected) {
+                return;
+            }
+
+            updateConnectionStatus('connecting');
+            
+            try {
+                socket = io({
+                    transports: ['websocket', 'polling'], // 允许降级到轮询
+                    timeout: 20000,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 2000
+                });
+
+                socket.on('connect', () => {
+                    console.log('WebSocket连接成功');
+                    updateConnectionStatus('connected');
+                    if (reconnectInterval) {
+                        clearInterval(reconnectInterval);
+                        reconnectInterval = null;
+                    }
+                });
+
+                socket.on('dataUpdate', (data) => {
+                    updateTables(data);
+                });
+
+                socket.on('dataCleared', (data) => {
+                    console.log('数据已清空:', data.msg);
+                    // 清空表格
+                    const damageTable = document.getElementById('damageTable').querySelector('tbody');
+                    damageTable.innerHTML = '';
+                });
+
+                socket.on('disconnect', (reason) => {
+                    console.log('WebSocket断开连接:', reason);
+                    updateConnectionStatus('disconnected', `断开原因: ${reason}`);
+                    
+                    // 如果不是主动断开，尝试重连
+                    if (reason !== 'io client disconnect') {
+                        scheduleReconnect();
+                    }
+                });
+
+                socket.on('connect_error', (error) => {
+                    console.error('WebSocket连接错误:', error);
+                    updateConnectionStatus('error', `连接错误: ${error.message}`);
+                    scheduleReconnect();
+                });
+
+                socket.on('error', (error) => {
+                    console.error('WebSocket错误:', error);
+                    updateConnectionStatus('error', `Socket错误: ${error.message || error}`);
+                });
+
+            } catch (error) {
+                console.error('创建WebSocket连接失败:', error);
+                updateConnectionStatus('error', `初始化失败: ${error.message}`);
+                scheduleReconnect();
+            }
+        }
+
+        function scheduleReconnect() {
+            if (reconnectInterval) return;
+            
+            let attempts = 0;
+            const maxAttempts = 10;
+            const baseDelay = 2000;
+            
+            reconnectInterval = setInterval(() => {
+                attempts++;
+                if (attempts > maxAttempts) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                    updateConnectionStatus('error', '重连失败，请刷新页面');
+                    return;
+                }
+                
+                console.log(`尝试重连 (${attempts}/${maxAttempts})`);
+                connectWebSocket();
+                
+                if (socket && socket.connected) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            }, baseDelay * Math.pow(1.5, attempts - 1)); // 指数退避
+        }
+
+        // 备用的轮询机制（在WebSocket连接失败时使用）
+        async function fallbackFetchData() {
+            try {
+                const res = await fetch('/api/data');
+                const data = await res.json();
+                updateTables(data);
+            } catch (err) {
+                console.error('备用数据获取失败：', err);
+            }
+        }
+
+        // 监控连接状态，必要时启用备用轮询
+        setInterval(() => {
+            const now = Date.now();
+            // 如果超过5秒没有收到数据更新且WebSocket未连接，启用备用轮询
+            if (now - lastDataUpdate > 5000 && connectionStatus !== 'connected') {
+                console.log('启用备用轮询机制');
+                fallbackFetchData();
+            }
+        }, 3000);
 
         function sortUserArray(userArray) {
             switch (currentSortMode) {
@@ -278,13 +446,29 @@
             const select = document.getElementById('sortSelect');
             currentSortMode = select.value;
             localStorage.setItem('sortMode', currentSortMode);
-            fetchDataAndUpdateTables();
+            // 如果有数据，立即重新排序显示
+            if (socket && socket.connected) {
+                // WebSocket会自动推送最新数据
+            } else {
+                // 备用API调用
+                fallbackFetchData();
+            }
         }
 
         async function clearData() {
-            const res = await fetch('/api/clear');
-            const data = await res.json();
-            fetchDataAndUpdateTables();
+            if (socket && socket.connected) {
+                // 优先使用WebSocket清空数据
+                socket.emit('clearData');
+            } else {
+                // 备用HTTP API
+                try {
+                    const res = await fetch('/api/clear');
+                    const data = await res.json();
+                    console.log('数据已清空:', data.msg);
+                } catch (err) {
+                    console.error('清空数据失败:', err);
+                }
+            }
         }
 
         function toggleDarkMode() {
@@ -323,10 +507,20 @@
             }
         }
 
-        setInterval(fetchDataAndUpdateTables, 100);
-        fetchDataAndUpdateTables();
+        // 初始化
+        connectWebSocket();
         initTheme();
         initSortMode();
+        
+        // 页面卸载时清理连接
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                socket.disconnect();
+            }
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+            }
+        });
     </script>
 </body>
 
