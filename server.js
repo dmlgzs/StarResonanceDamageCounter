@@ -1,7 +1,6 @@
 const cap = require('cap');
 const readline = require('readline');
 const winston = require("winston");
-const net = require('net');
 const zlib = require('zlib');
 const express = require('express');
 const { createServer } = require('http');
@@ -63,6 +62,9 @@ let total_count = {};
 let dps_window = {};
 let damage_time = {};
 let realtime_dps = {};
+
+// 统计状态控制
+let isStatsEnabled = true;
 
 // WebSocket连接管理
 let connectedClients = new Set();
@@ -151,7 +153,7 @@ async function main() {
     setInterval(() => {
         const now = Date.now();
         let hasRealtimeUpdate = false;
-        
+
         for (const uid of Object.keys(dps_window)) {
             while (dps_window[uid].length > 0 && now - dps_window[uid][0].time > 1000) {
                 dps_window[uid].shift();
@@ -170,25 +172,25 @@ async function main() {
             if (realtime_dps[uid].value > realtime_dps[uid].max) {
                 realtime_dps[uid].max = realtime_dps[uid].value;
             }
-            
+
             // 检查是否有实时数据变化
             if (oldValue !== realtime_dps[uid].value) {
                 hasRealtimeUpdate = true;
             }
         }
-        
+
         // 如果有数据变化或实时DPS更新，推送数据
         if ((dataChanged || hasRealtimeUpdate) && now - lastPushTime >= PUSH_THROTTLE_MS) {
             pushDataToClients();
             dataChanged = false;
             lastPushTime = now;
         }
-    }, 50); // 更频繁的检查，但有推送限制
+    }, 50);
 
     //express
     app.use(express.static('public'));
-    
-    // 保持API兼容性，但优先使用WebSocket
+
+    // 保留原先API，优先使用WebSocket
     app.get('/api/data', (req, res) => {
         const userData = generateUserData();
         const data = {
@@ -205,17 +207,52 @@ async function main() {
         damage_time = {};
         realtime_dps = {};
         logger.info('Statistics have been cleared!');
-        
+
         // 通知所有WebSocket客户端数据已清空
         io.emit('dataCleared', {
             code: 0,
             msg: 'Statistics have been cleared!',
             timestamp: Date.now()
         });
-        
+
         res.json({
             code: 0,
             msg: 'Statistics have been cleared!',
+        });
+    });
+
+    // 统计控制API
+    app.post('/api/stats/start', (req, res) => {
+        isStatsEnabled = true;
+        logger.info('Statistics started!');
+
+        // 通知所有WebSocket客户端统计已开始
+        io.emit('statsStarted', {
+            code: 0,
+            msg: 'Statistics started!',
+            timestamp: Date.now()
+        });
+
+        res.json({
+            code: 0,
+            msg: 'Statistics started!',
+        });
+    });
+
+    app.post('/api/stats/pause', (req, res) => {
+        isStatsEnabled = false;
+        logger.info('Statistics paused!');
+
+        // 通知所有WebSocket客户端统计已暂停
+        io.emit('statsPaused', {
+            code: 0,
+            msg: 'Statistics paused!',
+            timestamp: Date.now()
+        });
+
+        res.json({
+            code: 0,
+            msg: 'Statistics paused!',
         });
     });
 
@@ -223,15 +260,15 @@ async function main() {
     io.on('connection', (socket) => {
         logger.info(`WebSocket client connected: ${socket.id}`);
         connectedClients.add(socket.id);
-        
-        // 立即发送当前数据给新连接的客户端
+
+        // 发送当前数据给新连接的客户端
         const userData = generateUserData();
         socket.emit('dataUpdate', {
             code: 0,
             user: userData,
             timestamp: Date.now()
         });
-        
+
         // 处理客户端请求清空数据
         socket.on('clearData', () => {
             try {
@@ -241,7 +278,7 @@ async function main() {
                 damage_time = {};
                 realtime_dps = {};
                 logger.info('Statistics cleared via WebSocket');
-                
+
                 io.emit('dataCleared', {
                     code: 0,
                     msg: 'Statistics have been cleared!',
@@ -256,18 +293,59 @@ async function main() {
                 });
             }
         });
-        
+
+        // 处理统计控制
+        socket.on('startStats', () => {
+            try {
+                isStatsEnabled = true;
+                logger.info('Statistics started via WebSocket');
+
+                io.emit('statsStarted', {
+                    code: 0,
+                    msg: 'Statistics started!',
+                    timestamp: Date.now()
+                });
+            } catch (error) {
+                logger.error('Error starting stats via WebSocket:', error);
+                socket.emit('error', {
+                    code: 1,
+                    msg: 'Failed to start statistics',
+                    error: error.message
+                });
+            }
+        });
+
+        socket.on('pauseStats', () => {
+            try {
+                isStatsEnabled = false;
+                logger.info('Statistics paused via WebSocket');
+
+                io.emit('statsPaused', {
+                    code: 0,
+                    msg: 'Statistics paused!',
+                    timestamp: Date.now()
+                });
+            } catch (error) {
+                logger.error('Error pausing stats via WebSocket:', error);
+                socket.emit('error', {
+                    code: 1,
+                    msg: 'Failed to pause statistics',
+                    error: error.message
+                });
+            }
+        });
+
         // 处理心跳检测
         socket.on('ping', () => {
             socket.emit('pong', { timestamp: Date.now() });
         });
-        
+
         // 处理断开连接
         socket.on('disconnect', (reason) => {
             logger.info(`WebSocket client disconnected: ${socket.id}, reason: ${reason}`);
             connectedClients.delete(socket.id);
         });
-        
+
         // 处理连接错误
         socket.on('error', (error) => {
             logger.error(`WebSocket error for client ${socket.id}:`, error);
@@ -275,13 +353,13 @@ async function main() {
         });
     });
 
-    // 监控WebSocket连接健康状态
+    // WebSocket健康状态检查
     setInterval(() => {
         const connectedCount = connectedClients.size;
         if (connectedCount > 0) {
             logger.debug(`Active WebSocket connections: ${connectedCount}`);
         }
-        
+
         // 清理无效连接
         const validClients = new Set();
         for (const clientId of connectedClients) {
@@ -348,12 +426,18 @@ async function main() {
                                     for (const hit of hits) {
                                         const skill = hit[12];
                                         if (typeof skill !== 'number') break; //可以用来区分伤害和治疗啥的，但我不想去导出它的表
-                                        const value = hit[6], luckyValue = hit[8], isMiss = hit[2], isCrit = hit[5], hpLessenValue = hit[9] ?? 0;
+                                        const value = hit[6], luckyValue = hit[8], isCrit = hit[5], hpLessenValue = hit[9] ?? 0;
                                         const damage = value ?? luckyValue;
                                         const is_player = (BigInt(hit[21] || hit[11]) & 0xffffn) === 640n;
                                         if (!is_player) break; //排除怪物攻击
                                         const operator_uid = BigInt(hit[21] || hit[11]) >> 16n;
                                         if (!operator_uid) break;
+
+                                        // 检查统计状态，如果暂停则跳过数据记录
+                                        if (!isStatsEnabled) {
+                                            logger.debug('Statistics paused, skipping damage record for UID: ' + operator_uid);
+                                            break;
+                                        }
 
                                         //初始化
                                         if (!total_damage[operator_uid]) total_damage[operator_uid] = {
@@ -400,7 +484,7 @@ async function main() {
                                         } else {
                                             damage_time[operator_uid][0] = Date.now();
                                         }
-                                        
+
                                         // 标记数据已更新，用于WebSocket推送
                                         dataChanged = true;
                                         let extra = [];
@@ -446,7 +530,7 @@ async function main() {
     const buffer = Buffer.alloc(65535);
     const linkType = c.open(device, filter, bufSize, buffer);
     c.setMinBytes && c.setMinBytes(0);
-    c.on('packet', async function (nbytes, trunc) {
+    c.on('packet', async function (_nbytes, _trunc) {
         const buffer1 = Buffer.from(buffer);
         if (linkType === 'ETHERNET') {
             var ret = decoders.Ethernet(buffer1);
@@ -476,7 +560,7 @@ async function main() {
                     if (current_server !== src_server) {
                         try {
                             //尝试通过小包识别服务器
-                            if (buf[4] == 0) {
+                            if (buf[4] === 0) {
                                 const data = buf.subarray(10);
                                 if (data.length) {
                                     const stream = Readable.from(data, { objectMode: false });

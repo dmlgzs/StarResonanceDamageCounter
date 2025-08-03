@@ -192,6 +192,7 @@
         </select>
     </div>
     <button onclick="clearData()">✨ 清空统计数据</button>
+    <button id="statsToggleBtn" onclick="toggleStats()">⏸️ 暂停统计</button>
     <button onclick="toggleDarkMode()">🌙 夜间模式</button>
 
     <div class="card">
@@ -215,17 +216,19 @@
     </div>
 
     <div class="watermark"></div>
+    <div class="background"></div>
 
     <footer style="margin-top: 40px; font-size: 14px; color: #888;">Copyright © 2025 Made with ❤️ by <a href="https://dml.ink" target="_blank">Dimole</a></footer>
 
-    <!-- Socket.io客户端库 -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let currentSortMode = 'uid'; // 默认按UID排序
         let socket = null;
         let connectionStatus = 'disconnected';
-        let reconnectInterval = null;
         let lastDataUpdate = 0;
+        let isStatsRunning = true; // 默认开启统计
+        let useApiPolling = false; // 是否使用API轮询模式
+        let apiPollingInterval = null; // API轮询定时器
 
         // 连接状态指示器
         function createConnectionIndicator() {
@@ -330,9 +333,10 @@
                 socket.on('connect', () => {
                     console.log('WebSocket连接成功');
                     updateConnectionStatus('connected');
-                    if (reconnectInterval) {
-                        clearInterval(reconnectInterval);
-                        reconnectInterval = null;
+                    // 停止API轮询模式
+                    if (useApiPolling) {
+                        console.log('WebSocket重新连接，停止API轮询模式');
+                        stopApiPolling();
                     }
                 });
 
@@ -347,20 +351,38 @@
                     damageTable.innerHTML = '';
                 });
 
+                socket.on('statsStarted', (data) => {
+                    console.log('统计已开始:', data.msg);
+                    const button = document.getElementById('statsToggleBtn');
+                    isStatsRunning = true;
+                    button.textContent = '⏸️ 暂停统计';
+                    localStorage.setItem('statsRunning', 'true');
+                });
+
+                socket.on('statsPaused', (data) => {
+                    console.log('统计已暂停:', data.msg);
+                    const button = document.getElementById('statsToggleBtn');
+                    isStatsRunning = false;
+                    button.textContent = '▶️ 开始统计';
+                    localStorage.setItem('statsRunning', 'false');
+                });
+
                 socket.on('disconnect', (reason) => {
                     console.log('WebSocket断开连接:', reason);
-                    updateConnectionStatus('disconnected', `断开原因: ${reason}`);
                     
-                    // 如果不是主动断开，尝试重连
+                    // 切换到API轮询模式
                     if (reason !== 'io client disconnect') {
-                        scheduleReconnect();
+                        console.log('WebSocket断开，切换到API轮询模式');
+                        startApiPolling();
+                    } else {
+                        updateConnectionStatus('disconnected', `断开原因: ${reason}`);
                     }
                 });
 
                 socket.on('connect_error', (error) => {
                     console.error('WebSocket连接错误:', error);
-                    updateConnectionStatus('error', `连接错误: ${error.message}`);
-                    scheduleReconnect();
+                    console.log('WebSocket连接失败，切换到API轮询模式');
+                    startApiPolling();
                 });
 
                 socket.on('error', (error) => {
@@ -375,31 +397,7 @@
             }
         }
 
-        function scheduleReconnect() {
-            if (reconnectInterval) return;
-            
-            let attempts = 0;
-            const maxAttempts = 10;
-            const baseDelay = 2000;
-            
-            reconnectInterval = setInterval(() => {
-                attempts++;
-                if (attempts > maxAttempts) {
-                    clearInterval(reconnectInterval);
-                    reconnectInterval = null;
-                    updateConnectionStatus('error', '重连失败，请刷新页面');
-                    return;
-                }
-                
-                console.log(`尝试重连 (${attempts}/${maxAttempts})`);
-                connectWebSocket();
-                
-                if (socket && socket.connected) {
-                    clearInterval(reconnectInterval);
-                    reconnectInterval = null;
-                }
-            }, baseDelay * Math.pow(1.5, attempts - 1)); // 指数退避
-        }
+
 
         // 备用的轮询机制（在WebSocket连接失败时使用）
         async function fallbackFetchData() {
@@ -412,15 +410,41 @@
             }
         }
 
-        // 监控连接状态，必要时启用备用轮询
+        // 启动API轮询模式
+        function startApiPolling() {
+            if (apiPollingInterval) return; // 避免重复启动
+            
+            useApiPolling = true;
+            updateConnectionStatus('connected', 'API轮询模式');
+            console.log('切换到API轮询模式');
+            
+            // 立即获取一次数据
+            fallbackFetchData();
+            
+            // 每100ms轮询一次
+            apiPollingInterval = setInterval(() => {
+                fallbackFetchData();
+            }, 100);
+        }
+
+        // 停止API轮询模式
+        function stopApiPolling() {
+            if (apiPollingInterval) {
+                clearInterval(apiPollingInterval);
+                apiPollingInterval = null;
+            }
+            useApiPolling = false;
+        }
+
+        // 监控WebSocket连接状态，如果连接丢失且未在API轮询模式，启动API轮询
         setInterval(() => {
             const now = Date.now();
-            // 如果超过5秒没有收到数据更新且WebSocket未连接，启用备用轮询
-            if (now - lastDataUpdate > 5000 && connectionStatus !== 'connected') {
-                console.log('启用备用轮询机制');
-                fallbackFetchData();
+            // 如果超过1秒没有收到数据更新且不在API轮询模式，启动API轮询
+            if (now - lastDataUpdate > 1000 && connectionStatus !== 'connected' && !useApiPolling) {
+                console.log('检测到连接丢失，启动API轮询模式');
+                startApiPolling();
             }
-        }, 3000);
+        }, 100);
 
         function sortUserArray(userArray) {
             switch (currentSortMode) {
@@ -487,6 +511,40 @@
             }
         }
 
+        function toggleStats() {
+            const button = document.getElementById('statsToggleBtn');
+            
+            if (isStatsRunning) {
+                // 暂停统计
+                isStatsRunning = false;
+                button.textContent = '▶️ 开始统计';
+                localStorage.setItem('statsRunning', 'false');
+                
+                // 通知服务器暂停统计
+                if (socket && socket.connected) {
+                    socket.emit('pauseStats');
+                } else {
+                    // 备用HTTP API
+                    fetch('/api/stats/pause', { method: 'POST' })
+                        .catch(err => console.error('暂停统计失败:', err));
+                }
+            } else {
+                // 开始统计
+                isStatsRunning = true;
+                button.textContent = '⏸️ 暂停统计';
+                localStorage.setItem('statsRunning', 'true');
+                
+                // 通知服务器开始统计
+                if (socket && socket.connected) {
+                    socket.emit('startStats');
+                } else {
+                    // 备用HTTP API
+                    fetch('/api/stats/start', { method: 'POST' })
+                        .catch(err => console.error('开始统计失败:', err));
+                }
+            }
+        }
+
         // 页面加载时检查本地存储的主题偏好和排序偏好
         function initTheme() {
             const isDarkMode = localStorage.getItem('darkMode') === 'true';
@@ -506,7 +564,6 @@
                 document.getElementById('sortSelect').value = savedSortMode;
             }
         }
-
         // 初始化
         connectWebSocket();
         initTheme();
@@ -517,8 +574,8 @@
             if (socket) {
                 socket.disconnect();
             }
-            if (reconnectInterval) {
-                clearInterval(reconnectInterval);
+            if (apiPollingInterval) {
+                clearInterval(apiPollingInterval);
             }
         });
     </script>
