@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星痕共鸣伤害统计工具 - 设置</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .device-list {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .device-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .device-item:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .device-item.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .device-item input[type="radio"] {
+            margin-right: 12px;
+            transform: scale(1.2);
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .device-desc {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1em;
+            background: white;
+            color: #4a5568;
+            appearance: none;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-50%);
+            color: #718096;
+            pointer-events: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .requirements {
+            background: #fff5cd;
+            border: 1px solid #f6e05e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .requirements h3 {
+            color: #744210;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .requirements h3::before {
+            content: '⚠️';
+            margin-right: 8px;
+        }
+
+        .requirements ul {
+            color: #744210;
+            margin-left: 20px;
+        }
+
+        .requirements li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>星痕共鸣伤害统计工具</h1>
+            <p>请配置网络设备和日志级别</p>
+        </div>
+
+        <div class="requirements">
+            <h3>运行要求</h3>
+            <ul>
+                <li>确保已安装 WinPcap 或 Npcap 驱动程序</li>
+                <li>程序需要以管理员权限运行</li>
+                <li>确保游戏正在运行并已连接服务器</li>
+            </ul>
+        </div>
+
+        <form id="setupForm">
+            <div class="form-group">
+                <label class="label">选择网络设备:</label>
+                <div class="device-list" id="deviceList">
+                    <div style="text-align: center; padding: 20px; color: #718096;">
+                        正在加载网络设备...
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="label" for="logLevel">日志级别:</label>
+                <div class="select-wrapper">
+                    <select id="logLevel" name="logLevel">
+                        <option value="info">Info - 基本信息</option>
+                        <option value="debug">Debug - 详细调试信息</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="refreshDevices()">
+                    刷新设备
+                </button>
+                <button type="submit" class="btn btn-primary" id="startBtn" disabled>
+                    启动服务
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在启动服务，请稍候...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+        </form>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let devices = [];
+        let selectedDevice = null;
+
+        // 加载网络设备
+        async function loadDevices() {
+            try {
+                devices = await ipcRenderer.invoke('get-network-devices');
+                renderDevices();
+            } catch (error) {
+                showError('获取网络设备失败: ' + error.message);
+            }
+        }
+
+        // 渲染设备列表
+        function renderDevices() {
+            const deviceList = document.getElementById('deviceList');
+            
+            if (devices.length === 0) {
+                deviceList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #e53e3e;">
+                        未找到可用的网络设备，请检查网络驱动程序是否正确安装
+                    </div>
+                `;
+                return;
+            }
+
+            deviceList.innerHTML = devices.map((device, index) => `
+                <div class="device-item" onclick="selectDevice(${index})">
+                    <input type="radio" name="device" value="${index}" id="device${index}">
+                    <div class="device-info">
+                        <div class="device-name">设备 ${index}</div>
+                        <div class="device-desc">${device.description}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 选择设备
+        function selectDevice(index) {
+            selectedDevice = index;
+            
+            // 更新UI
+            document.querySelectorAll('.device-item').forEach((item, i) => {
+                item.classList.toggle('selected', i === index);
+                const radio = item.querySelector('input[type="radio"]');
+                radio.checked = i === index;
+            });
+            
+            // 启用开始按钮
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        // 刷新设备列表
+        function refreshDevices() {
+            selectedDevice = null;
+            document.getElementById('startBtn').disabled = true;
+            loadDevices();
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // 显示成功信息
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+
+        // 表单提交处理
+        document.getElementById('setupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (selectedDevice === null) {
+                showError('请选择一个网络设备');
+                return;
+            }
+
+            const logLevel = document.getElementById('logLevel').value;
+            const startBtn = document.getElementById('startBtn');
+            const loading = document.getElementById('loading');
+
+            // 显示加载状态
+            startBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const result = await ipcRenderer.invoke('start-server', {
+                    deviceIndex: selectedDevice,
+                    logLevel: logLevel
+                });
+
+                if (result.success) {
+                    showSuccess('服务启动成功！正在跳转到数据界面...');
+                } else {
+                    showError('启动失败: ' + result.error);
+                    startBtn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                showError('启动失败: ' + error.message);
+                startBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDevices();
+        });
+    </script>
+</body>
+</html>

@@ -2,11 +2,16 @@
   "name": "star-resonance-damage-counter",
   "version": "2.1.0",
   "description": "Damage Counter for Star Resonance",
-  "main": "server.js",
+  "main": "main.js",
   "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "pack": "electron-builder --dir",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["star-resonance", "damage-counter", "gaming"],
   "author": "Dimole <dmlgzs@qq.com>",
   "license": "MPL-2.0",
   "packageManager": "pnpm@10.13.1",
@@ -16,5 +21,54 @@
     "protobufjs": "^7.5.3",
     "socket.io": "^4.8.1",
     "winston": "^3.17.0"
-  }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+      "build": {
+        "appId": "com.dimole.star-resonance-counter",
+        "productName": "星痕共鸣伤害统计工具",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "main.js",
+            "server.js",
+            "public/**/*",
+            "algo/**/*",
+            "node_modules/**/*"
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": ["x64"]
+                },
+                {
+                    "target": "portable",
+                    "arch": ["x64"]
+                }
+            ],
+            "requestedExecutionLevel": "requireAdministrator"
+        },
+        "linux": {
+            "target": [
+                {
+                    "target": "AppImage",
+                    "arch": ["x64"]
+                }
+            ]
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "星痕共鸣伤害统计"
+        },
+        "nodeGypRebuild": false,
+        "buildDependenciesFromSource": false,
+        "npmRebuild": false
+    }
 }
