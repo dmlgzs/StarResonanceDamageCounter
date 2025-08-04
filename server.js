@@ -1,4 +1,5 @@
 const cap = require('cap');
+const cors = require('cors')
 const readline = require('readline');
 const winston = require("winston");
 const net = require('net');
@@ -110,6 +111,7 @@ async function main() {
     }, 100);
 
     //express
+    app.use(cors());
     app.use(express.static('public'));
     app.get('/api/data', (req, res) => {
         const user = {};
