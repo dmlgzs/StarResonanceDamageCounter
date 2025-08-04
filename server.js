@@ -1,5 +1,5 @@
 const cap = require('cap');
-const cors = require('cors')
+const cors = require('cors');
 const readline = require('readline');
 const winston = require("winston");
 const net = require('net');
