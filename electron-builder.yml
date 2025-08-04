@@ -1,0 +1,82 @@
+appId: com.dimole.star-resonance-counter
+productName: 星痕共鸣伤害统计工具
+copyright: Copyright © 2024 Dimole
+
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - main.js
+  - server.js
+  - public/**/*
+  - algo/**/*
+  - node_modules/**/*
+  - package.json
+
+extraFiles:
+  - from: assets
+    to: assets
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  requestedExecutionLevel: requireAdministrator
+  publisherName: Dimole
+  verifyUpdateCodeSignature: false
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 星痕共鸣伤害统计
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  installerHeaderIcon: assets/icon.ico
+  deleteAppDataOnUninstall: true
+  displayLanguageSelector: false
+  language: 2052  # 简体中文
+
+portable:
+  requestExecutionLevel: requireAdministrator
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  maintainer: Dimole <dmlgzs@qq.com>
+  category: Game
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.games
+
+publish: null  # 不自动发布
+
+compression: maximum
+includeSubNodeModules: true
+
+# 处理原生模块
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+
+# 确保包含所有必要的原生依赖
+extraMetadata:
+  main: main.js

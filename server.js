@@ -56,22 +56,44 @@ let damage_time = {};
 let realtime_dps = {};
 
 async function main() {
-    print('Welcome to use Damage Counter for Star Resonance by Dimole!');
-    print('Version: V2.1');
-    for (let i = 0; i < devices.length; i++) {
-        print(i + '.\t' + devices[i].description);
+    // 检查是否在Electron环境中运行
+    const isElectron = process.env.DEVICE_INDEX !== undefined;
+    let num, log_level;
+
+    if (isElectron) {
+        // Electron环境，从环境变量获取配置
+        num = parseInt(process.env.DEVICE_INDEX);
+        log_level = process.env.LOG_LEVEL || 'info';
+        
+        if (isNaN(num) || !devices[num]) {
+            console.error('Invalid device number from environment!');
+            return;
+        }
+        
+        print(`Using device ${num}: ${devices[num].description}`);
+        print(`Log level: ${log_level}`);
+    } else {
+        // 命令行环境，保持原有交互逻辑
+        print('Welcome to use Damage Counter for Star Resonance by Dimole!');
+        print('Version: V2.1');
+        for (let i = 0; i < devices.length; i++) {
+            print(i + '.\t' + devices[i].description);
+        }
+        num = await ask('Please enter the number of the device used for packet capture: ');
+        if (!devices[num]) {
+            print('Cannot find device ' + num + '!');
+            process.exit(1);
+        }
+        log_level = await ask('Please enter log level (info|debug): ') || 'info';
+        if (!log_level || !['info', 'debug'].includes(log_level)) {
+            print('Invalid log level!');
+            process.exit(1);
+        }
     }
-    const num = await ask('Please enter the number of the device used for packet capture: ');
-    if (!devices[num]) {
-        print('Cannot find device ' + num + '!');
-        process.exit(1);
+    
+    if (!isElectron) {
+        rl.close();
     }
-    const log_level = await ask('Please enter log level (info|debug): ') || 'info';
-    if (!log_level || !['info', 'debug'].includes(log_level)) {
-        print('Invalid log level!');
-        process.exit(1);
-    }
-    rl.close();
     const logger = winston.createLogger({
         level: log_level,
         format: winston.format.combine(
