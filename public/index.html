@@ -589,10 +589,20 @@
             if (chart && typeof chart.setOption === 'function') {
                 chart.setOption({
                     series: [],
+                    legend: {
+                        data: [],
+                        selected: {}
+                    },
                     xAxis: {
                         data: []
                     }
                 });
+            }
+            
+            // 清空控制面板中的用户控制项
+            const userControlsList = document.getElementById('userControlsList');
+            if (userControlsList) {
+                userControlsList.innerHTML = '';
             }
             
             fetchDataAndUpdateTables();
