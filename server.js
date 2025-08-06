@@ -65,6 +65,7 @@ class StatisticData {
             normal: 0,
             critical: 0,
             lucky: 0,
+            crit_lucky: 0, // 添加暴幸计数
             total: 0,
         };
         this.realtimeWindow = []; // 实时统计窗口
@@ -100,6 +101,9 @@ class StatisticData {
         this.stats.hpLessen += hpLessenValue;
 
         // 更新次数统计
+        if (isCrit && isLucky) {
+            this.count.crit_lucky++;
+        }
         if (isCrit) {
             this.count.critical++;
         }
@@ -168,6 +172,7 @@ class StatisticData {
             normal: 0,
             critical: 0,
             lucky: 0,
+            crit_lucky: 0,
             total: 0,
         };
         this.realtimeWindow = [];
@@ -251,6 +256,7 @@ class UserData {
             normal: this.damageStats.count.normal + this.healingStats.count.normal,
             critical: this.damageStats.count.critical + this.healingStats.count.critical,
             lucky: this.damageStats.count.lucky + this.healingStats.count.lucky,
+            crit_lucky: this.damageStats.count.crit_lucky + this.healingStats.count.crit_lucky,
             total: this.damageStats.count.total + this.healingStats.count.total,
         };
     }
@@ -262,11 +268,13 @@ class UserData {
             realtime_dps_max: this.damageStats.realtimeStats.max,
             total_dps: this.getTotalDps(),
             total_damage: { ...this.damageStats.stats },
+            damage_counts: { ...this.damageStats.count }, // 新增
             total_count: this.getTotalCount(),
             realtime_hps: this.healingStats.realtimeStats.value,
             realtime_hps_max: this.healingStats.realtimeStats.max,
             total_hps: this.getTotalHps(),
             total_healing: { ...this.healingStats.stats },
+            healing_counts: { ...this.healingStats.count }, // 新增
             taken_damage: this.takenDamage,
             profession: this.profession,
         };
