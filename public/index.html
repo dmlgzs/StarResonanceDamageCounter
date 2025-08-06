@@ -234,24 +234,83 @@
         .dark-mode #chartControlPanel h4 {
             color: #4fc3f7 !important;
         }
+
+        /* 控制面板样式 */
+        .controls-panel {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .dark-mode .controls-panel {
+            background: #2d2d2d !important;
+            color: #e0e0e0 !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* 简洁模式样式 */
+        .simple-mode .damage-detail-cols,
+        .simple-mode .healing-detail-cols {
+            display: none !important;
+        }
+
+        .simple-mode .damage-main-col,
+        .simple-mode .healing-main-col {
+            display: none !important;
+        }
+
+        .simple-mode .damage-simple-col,
+        .simple-mode .healing-simple-col {
+            display: table-cell !important;
+        }
+
+        /* 表格样式优化 */
+        table {
+            table-layout: auto;
+            min-width: 100%;
+        }
+
+        th, td {
+            white-space: nowrap;
+            padding: 8px 6px;
+            font-size: 13px;
+        }
+
+        .damage-main-col, .healing-main-col {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .dark-mode .damage-main-col, 
+        .dark-mode .healing-main-col {
+            background-color: rgba(52, 152, 219, 0.15);
+        }
     </style>
 </head>
 
 <body>
-    <h1>🎯 星痕共鸣实时战斗数据展示 V2.1</h1>
+    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2</h1>
     <h3>⚠ 暂未区分治疗量与伤害量，将合并计算，数据仅供参考</h3>
     <div style="margin: 20px 0;">
         <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
         <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
             <option value="uid">按UID排序 (升序)</option>
+            <option value="takenDamage">按承伤排序 (降序)</option>
             <option value="damage">按总伤害排序 (降序)</option>
             <option value="dps">按总DPS排序 (降序)</option>
             <option value="realtimeDpsMax">按最大瞬时DPS排序 (降序)</option>
+            <option value="healing">按总治疗排序 (降序)</option>
+            <option value="hps">按总HPS排序 (降序)</option>
+            <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
         </select>
     </div>
     <button onclick="clearData()">✨ 清空统计数据</button>
     <button id="statsToggleBtn" onclick="toggleStats()">⏸️ 暂停统计</button>
     <button onclick="toggleDarkMode()">🌙 夜间模式</button>
+    <button onclick="toggleSimpleMode()">📋 简洁模式</button>
 
     <!-- DPS图表容器 -->
     <div class="card" style="margin-bottom: 20px;">
@@ -283,16 +342,33 @@
         <table id="damageTable">
             <thead>
                 <tr>
-                    <th title="角色唯一标识符">角色 ID</th>
-                    <th title="角色在战斗中造成的总伤害和治疗量">总伤害/治疗</th>
-                    <th title="角色在战斗中造成的非幸运的暴击伤害和治疗量">纯暴击</th>
-                    <th title="角色在战斗中造成的非暴击的幸运伤害和治疗量">纯幸运</th>
-                    <th title="角色在战斗中造成的暴击的幸运伤害和治疗量">暴击幸运</th>
-                    <th title="角色在战斗中的暴击触发率">暴击率</th>
-                    <th title="角色在战斗中的幸运触发率">幸运率</th>
-                    <th title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时DPS/HPS</th>
-                    <th title="角色在战斗中的最大瞬时DPS/HPS">最大瞬时</th>
-                    <th title="角色在战斗中的总DPS/HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS/HPS</th>
+                    <th rowspan="2" title="角色唯一标识符/自定义昵称">角色昵称</th>
+                    <th rowspan="2" title="角色职业">职业</th>
+                    <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
+                    <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
+                    <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
+                    <th class="damage-main-col" colspan="4">伤害</th>
+                    <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
+                    <th colspan="3">DPS</th>
+                    <th class="healing-main-col" colspan="4">治疗</th>
+                    <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
+                    <th colspan="3">HPS</th>
+                </tr>
+                <tr>
+                    <th title="角色在战斗中造成的总伤害">总伤害</th>
+                    <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
+                    <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
+                    <th class="damage-detail-cols" title="角色在战斗中造成的暴击的幸运伤害">暴击幸运</th>
+                    <th title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
+                    <th title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
+                    <th title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
+                    <th title="角色在战斗中造成的总治疗量">总治疗</th>
+                    <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
+                    <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
+                    <th class="healing-detail-cols" title="角色在战斗中造成的暴击的幸运治疗量">暴击幸运</th>
+                    <th title="角色在战斗中的最近一秒造成的治疗量">瞬时HPS</th>
+                    <th title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
+                    <th title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -302,7 +378,14 @@
     <div class="watermark"></div>
     <div class="background"></div>
 
-    <footer style="margin-top: 40px; font-size: 14px; color: #888;">Copyright © 2025 Made with ❤️ by <a href="https://dml.ink" target="_blank">Dimole</a></footer>
+    <footer style="margin-top: 40px; font-size: 14px; color: #888;">
+        <span>© 2025 Made with ❤️ by </span>
+        <a href="https://github.com/dmlgzs/" target="_blank">Dimole</a>
+        <span> and </span>
+        <a href="https://github.com/dmlgzs/StarResonanceDamageCounter/graphs/contributors" target="_blank">Other Contributors</a>
+        <span> | </span>
+        <a href="https://github.com/dmlgzs/StarResonanceDamageCounter" target="_blank">GitHub</a>
+    </footer>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="echarts.min.js"></script>
@@ -340,6 +423,7 @@
         
         let performanceMode = false;
         let userPriorityCache = {}; // 用户优先级缓存
+        let userColorMap = {}; // 用户颜色映射
 
         // 连接状态指示器
         function createConnectionIndicator() {
@@ -421,13 +505,62 @@
                 for (const user of userArray) {
                     const crit_rate = user.total_count.critical / user.total_count.total;
                     const lucky_rate = user.total_count.lucky / user.total_count.total;
-                    const row = `<tr><td>${user.id}</td><td>${user.total_damage.total}</td>` +
-                                `<td>${user.total_damage.critical}</td><td>${user.total_damage.lucky}</td>` +
-                                `<td>${user.total_damage.crit_lucky}</td>` +
-                                `<td>${(crit_rate * 100).toFixed(2)}%</td><td>${(lucky_rate * 100).toFixed(2)}%</td>` +
-                                `<td>${user.realtime_dps}</td><td>${user.realtime_dps_max}</td>` +
-                                `<td>${user.total_dps.toFixed(2)}</td></tr>`;
-                    damageTable.innerHTML += row;
+                    
+                    const row = document.createElement('tr');
+                    
+                    // 昵称列
+                    const nicknameCell = document.createElement('td');
+                    const nickname = userNicknames[user.id] || `UID:${user.id}`;
+                    nicknameCell.textContent = nickname;
+                    
+                    row.appendChild(nicknameCell);
+                    
+                    const isSimpleMode = document.body.classList.contains('simple-mode');
+                    
+                    // 其他数据列
+                    const otherCells = [
+                        user.profession || '未知',
+                        user.taken_damage || 0,
+                        `${(crit_rate * 100).toFixed(2)}%`,
+                        `${(lucky_rate * 100).toFixed(2)}%`,
+                        user.total_damage.total,
+                        // 简洁模式下跳过伤害详细列
+                        ...(isSimpleMode ? [] : [
+                            user.total_damage.critical,
+                            user.total_damage.lucky,
+                            user.total_damage.crit_lucky
+                        ]),
+                        user.realtime_dps,
+                        user.realtime_dps_max,
+                        user.total_dps.toFixed(2),
+                        (user.total_healing?.total || 0),
+                        // 简洁模式下跳过治疗详细列
+                        ...(isSimpleMode ? [] : [
+                            user.total_healing?.critical || 0,
+                            user.total_healing?.lucky || 0,
+                            user.total_healing?.crit_lucky || 0
+                        ]),
+                        user.realtime_hps || 0,
+                        user.realtime_hps_max || 0,
+                        (user.total_hps || 0).toFixed(2),
+                    ];
+                    
+                    otherCells.forEach(cellData => {
+                        const cell = document.createElement('td');
+                        cell.textContent = cellData;
+                        row.appendChild(cell);
+                    });
+                    
+                    damageTable.appendChild(row);
+                }
+                
+                // 检查是否需要启用性能模式
+                const activeUserCount = Object.keys(dpsHistory).length;
+                const shouldEnablePerformanceMode = activeUserCount > CHART_CONFIG.PERFORMANCE_MODE_THRESHOLD;
+                
+                if (shouldEnablePerformanceMode !== performanceMode) {
+                    performanceMode = shouldEnablePerformanceMode;
+                    console.log(`${performanceMode ? '启用' : '关闭'}性能模式 (用户数: ${activeUserCount})`);
                 }
             } catch (err) {
                 console.error('更新表格失败：', err);
@@ -580,6 +713,18 @@
                 case 'realtimeDpsMax':
                     userArray.sort((a, b) => b.realtime_dps_max - a.realtime_dps_max);
                     break;
+                case 'takenDamage':
+                    userArray.sort((a, b) => (b.taken_damage || 0) - (a.taken_damage || 0));
+                    break;
+                case 'healing':
+                    userArray.sort((a, b) => (b.total_healing?.total || 0) - (a.total_healing?.total || 0));
+                    break;
+                case 'hps':
+                    userArray.sort((a, b) => (b.total_hps || 0) - (a.total_hps || 0));
+                    break;
+                case 'realtimeHpsMax':
+                    userArray.sort((a, b) => (b.realtime_hps_max || 0) - (a.realtime_hps_max || 0));
+                    break;
                 default:
                     userArray.sort((a, b) => a.id - b.id);
                     break;
@@ -600,6 +745,23 @@
         }
 
         async function clearData() {
+            // 清空历史数据和图表缓存
+            dpsHistory = {};
+            chartDatasetMap = {};
+            userPriorityCache = {};
+            userColorMap = {}; // 清空颜色映射
+            performanceMode = false;
+            
+            // 清空ECharts图表
+            if (chart && typeof chart.setOption === 'function') {
+                chart.setOption({
+                    series: [],
+                    xAxis: {
+                        data: []
+                    }
+                });
+            }
+
             if (socket && socket.connected) {
                 // 优先使用WebSocket清空数据
                 socket.emit('clearData');
@@ -685,6 +847,62 @@
             }
         }
 
+        function toggleSimpleMode() {
+            const body = document.body;
+            const isSimpleMode = body.classList.contains('simple-mode');
+            const button = event.target;
+            
+            if (isSimpleMode) {
+                body.classList.remove('simple-mode');
+                button.textContent = '📋 简洁模式';
+                localStorage.setItem('simpleMode', 'false');
+            } else {
+                body.classList.add('simple-mode');
+                button.textContent = '📄 详细模式';
+                localStorage.setItem('simpleMode', 'true');
+            }
+        }
+
+        function initSimpleMode() {
+            const isSimpleMode = localStorage.getItem('simpleMode') === 'true';
+            const body = document.body;
+            const button = document.querySelector('button[onclick="toggleSimpleMode()"]');
+            
+            if (isSimpleMode) {
+                body.classList.add('simple-mode');
+                button.textContent = '📄 详细模式';
+            }
+        }
+
+        // 美观的20色配色方案
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+            '#DDA0DD', '#FF9F43', '#54A0FF', '#5F27CD', '#00D2D3',
+            '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#FD79A8',
+            '#FDCB6E', '#E84393', '#A29BFE', '#00B894', '#00CEC9'
+        ];
+        
+        // 为用户分配固定颜色
+        function getUserColor(userId) {
+            const userIdStr = String(userId);
+            
+            if (!userColorMap[userIdStr]) {
+                // 基于用户ID的哈希值分配颜色，确保同一个用户总是得到相同的颜色
+                let hash = 0;
+                for (let i = 0; i < userIdStr.length; i++) {
+                    const char = userIdStr.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // 转换为32位整数
+                }
+                
+                // 使用哈希值选择颜色
+                const colorIndex = Math.abs(hash) % colors.length;
+                userColorMap[userIdStr] = colors[colorIndex];
+            }
+            
+            return userColorMap[userIdStr];
+        }
+
         // 用户优先级计算 - 基于DPS和活跃度
         function calculateUserPriority(userId, userArray) {
             const user = userArray.find(u => u.id.toString() === userId);
@@ -720,7 +938,7 @@
                 .slice(0, maxCount);
         }
 
-        // DPS历史数据管理 - 保持数据真实性
+        // DPS/HPS历史数据管理 - 保持数据真实性
         function updateDpsHistory(userArray) {
             const currentTime = Date.now();
             
@@ -729,11 +947,12 @@
                     dpsHistory[user.id] = [];
                 }
                 
-                // 只记录真实的DPS数据，不进行人工平滑
+                // 记录DPS和HPS数据
                 dpsHistory[user.id].push({
                     time: currentTime,
                     dps: user.realtime_dps,
-                    isActive: user.realtime_dps > 0 // 标记是否在活跃输出
+                    hps: user.realtime_hps || 0,
+                    isActive: user.realtime_dps > 0 || (user.realtime_hps || 0) > 0 // 标记是否在活跃输出
                 });
                 
                 // 保持最多60秒的数据
@@ -895,14 +1114,6 @@
             if (currentTime - lastChartUpdateTime < updateInterval) return;
             lastChartUpdateTime = currentTime;
             
-            // 美观的20色配色方案
-            const colors = [
-                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-                '#DDA0DD', '#FF9F43', '#54A0FF', '#5F27CD', '#00D2D3',
-                '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#FD79A8',
-                '#FDCB6E', '#E84393', '#A29BFE', '#00B894', '#00CEC9'
-            ];
-            
             // 获取优先显示的用户
             const priorityUsers = getTopPriorityUsers(userArray, CHART_CONFIG.MAX_VISIBLE_USERS);
             performanceMode = priorityUsers.length > CHART_CONFIG.PERFORMANCE_MODE_THRESHOLD;
@@ -943,7 +1154,7 @@
             priorityUsers.forEach((userId, index) => {
                 const history = dpsHistory[userId];
                 const nickname = userNicknames[userId] || `UID:${userId}`;
-                const color = colors[index % colors.length];
+                const color = getUserColor(userId); // 使用固定颜色映射
                 
                 // 构建数据数组
                 const data = new Array(dataLength).fill(null);
@@ -1126,6 +1337,7 @@
         // 初始化
         connectWebSocket();
         initTheme();
+        initSimpleMode();
         initSortMode();
         initChart();
         

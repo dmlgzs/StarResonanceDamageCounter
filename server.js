@@ -75,9 +75,313 @@ let dataChanged = false;
 let lastPushTime = 0;
 const PUSH_THROTTLE_MS = 100; // 限制推送频率为100ms
 
+/** 统计数据类 - 用于统计伤害或治疗数据 */
+class StatisticData {
+    constructor() {
+        this.stats = {
+            normal: 0,
+            critical: 0,
+            lucky: 0,
+            crit_lucky: 0,
+            hpLessen: 0, // 仅用于伤害统计
+            total: 0,
+        };
+        this.count = {
+            normal: 0,
+            critical: 0,
+            lucky: 0,
+            total: 0,
+        };
+        this.realtimeWindow = []; // 实时统计窗口
+        this.timeRange = []; // 时间范围 [开始时间, 最后时间]
+        this.realtimeStats = {
+            value: 0,
+            max: 0,
+        };
+    }
+
+    /** 添加记录
+     * @param {number} value - 数值（伤害或治疗）
+     * @param {boolean} isCrit - 是否暴击
+     * @param {boolean} isLucky - 是否幸运
+     * @param {number} hpLessenValue - HP减少值（仅用于伤害）
+     */
+    addRecord(value, isCrit, isLucky, hpLessenValue = 0) {
+        const now = Date.now();
+
+        // 更新数值统计
+        if (isCrit) {
+            if (isLucky) {
+                this.stats.crit_lucky += value;
+            } else {
+                this.stats.critical += value;
+            }
+        } else if (isLucky) {
+            this.stats.lucky += value;
+        } else {
+            this.stats.normal += value;
+        }
+        this.stats.total += value;
+        this.stats.hpLessen += hpLessenValue;
+
+        // 更新次数统计
+        if (isCrit) {
+            this.count.critical++;
+        }
+        if (isLucky) {
+            this.count.lucky++;
+        }
+        if (!isCrit && !isLucky) {
+            this.count.normal++;
+        }
+        this.count.total++;
+        this.realtimeWindow.push({
+            time: now,
+            value,
+        });
+
+        // 更新时间范围
+        if (this.timeRange.length === 0) {
+            this.timeRange = [now, now];
+        } else {
+            this.timeRange[1] = now;
+        }
+    }
+
+    /** 更新实时统计（过去1秒内的数据） */
+    updateRealtimeStats() {
+        const now = Date.now();
+        const cutoff = now - 1000; // 1秒前
+
+        // 清理过期数据
+        this.realtimeWindow = this.realtimeWindow.filter(entry => entry.time > cutoff);
+
+        // 计算实时值
+        const oldValue = this.realtimeStats.value;
+        this.realtimeStats.value = this.realtimeWindow.reduce((sum, entry) => sum + entry.value, 0);
+
+        // 更新最大值
+        if (this.realtimeStats.value > this.realtimeStats.max) {
+            this.realtimeStats.max = this.realtimeStats.value;
+        }
+
+        return oldValue !== this.realtimeStats.value;
+    }
+
+    /** 获取总的每秒平均值 */
+    getTotalPerSecond() {
+        if (this.timeRange.length < 2 || this.timeRange[1] <= this.timeRange[0]) {
+            return 0;
+        }
+        const duration = this.timeRange[1] - this.timeRange[0];
+        return (this.stats.total / duration) * 1000;
+    }
+
+    /** 重置所有数据 */
+    reset() {
+        this.stats = {
+            normal: 0,
+            critical: 0,
+            lucky: 0,
+            crit_lucky: 0,
+            hpLessen: 0,
+            total: 0,
+        };
+        this.count = {
+            normal: 0,
+            critical: 0,
+            lucky: 0,
+            total: 0,
+        };
+        this.realtimeWindow = [];
+        this.timeRange = [];
+        this.realtimeStats = {
+            value: 0,
+            max: 0,
+        };
+    }
+}
+
+/** 用户数据类 */
+class UserData {
+    constructor(uid) {
+        this.uid = uid;
+        this.damageStats = new StatisticData();
+        this.healingStats = new StatisticData();
+        this.takenDamage = 0; // 承伤
+        this.profession = '未知';
+    }
+
+    /** 添加伤害记录
+     * @param {number} damage - 伤害值
+     * @param {boolean} isCrit - 是否暴击
+     * @param {boolean} isLucky - 是否幸运
+     * @param {number} hpLessenValue - HP减少值
+     */
+    addDamage(damage, isCrit, isLucky, hpLessenValue = 0) {
+        this.damageStats.addRecord(damage, isCrit, isLucky, hpLessenValue);
+    }
+
+    /** 添加治疗记录
+     * @param {number} healing - 治疗值
+     * @param {boolean} isCrit - 是否暴击
+     * @param {boolean} isLucky - 是否幸运
+     */
+    addHealing(healing, isCrit, isLucky) {
+        this.healingStats.addRecord(healing, isCrit, isLucky);
+    }
+
+    /** 添加承伤记录
+     * @param {number} damage - 承受的伤害
+     */
+    addTakenDamage(damage) {
+        this.takenDamage += damage;
+    }
+
+    /** 设置职业 */
+    setProfession(profession) {
+        this.profession = profession;
+    }
+
+    /** 更新实时DPS和HPS 计算过去1秒内的总伤害和治疗 */
+    updateRealtimeDps() {
+        this.damageStats.updateRealtimeStats();
+        this.healingStats.updateRealtimeStats();
+    }
+
+    /** 获取总DPS */
+    getTotalDps() {
+        return this.damageStats.getTotalPerSecond();
+    }
+
+    /** 获取总HPS */
+    getTotalHps() {
+        return this.healingStats.getTotalPerSecond();
+    }
+
+    /** 获取合并的次数统计 */
+    getTotalCount() {
+        return {
+            normal: this.damageStats.count.normal + this.healingStats.count.normal,
+            critical: this.damageStats.count.critical + this.healingStats.count.critical,
+            lucky: this.damageStats.count.lucky + this.healingStats.count.lucky,
+            total: this.damageStats.count.total + this.healingStats.count.total,
+        };
+    }
+    /** 获取用户数据摘要 */
+    getSummary() {
+        return {
+            realtime_dps: this.damageStats.realtimeStats.value,
+            realtime_dps_max: this.damageStats.realtimeStats.max,
+            total_dps: this.getTotalDps(),
+            total_damage: { ...this.damageStats.stats },
+            total_count: this.getTotalCount(),
+            realtime_hps: this.healingStats.realtimeStats.value,
+            realtime_hps_max: this.healingStats.realtimeStats.max,
+            total_hps: this.getTotalHps(),
+            total_healing: { ...this.healingStats.stats },
+            taken_damage: this.takenDamage,
+            profession: this.profession,
+        };
+    }
+
+    /** 重置用户数据 */
+    reset() {
+        this.damageStats.reset();
+        this.healingStats.reset();
+        this.takenDamage = 0;
+        this.profession = '未知';
+    }
+}
+
+// 用户数据管理器类
+class UserDataManager {
+    constructor() {
+        this.users = new Map(); // 使用Map存储UserData实例
+    }
+
+    // 获取或创建用户数据
+    getOrCreateUser(uid) {
+        if (!this.users.has(uid)) {
+            this.users.set(uid, new UserData(uid));
+        }
+        return this.users.get(uid);
+    }
+
+    // 添加伤害数据
+    addDamage(uid, damage, isCrit, isLucky, hpLessen = 0) {
+        if (!isStatsEnabled) return;
+        
+        const user = this.getOrCreateUser(uid);
+        user.addDamage(damage, isCrit, isLucky, hpLessen);
+        dataChanged = true;
+    }
+
+    // 添加治疗数据
+    addHealing(uid, healing, isCrit, isLucky) {
+        if (!isStatsEnabled) return;
+        
+        const user = this.getOrCreateUser(uid);
+        user.addHealing(healing, isCrit, isLucky);
+        dataChanged = true;
+    }
+
+    // 添加承受伤害数据
+    addTakenDamage(uid, damage) {
+        if (!isStatsEnabled) return;
+        
+        const user = this.getOrCreateUser(uid);
+        user.addTakenDamage(damage);
+        dataChanged = true;
+    }
+
+    // 设置用户职业
+    setProfession(uid, profession) {
+        const user = this.getOrCreateUser(uid);
+        user.setProfession(profession);
+    }
+
+    // 更新所有用户的实时DPS/HPS
+    updateAllRealtimeDps() {
+        let hasUpdate = false;
+
+        for (const [uid, user] of this.users) {
+            const oldDps = user.damageStats.realtimeStats.value;
+            const oldHps = user.healingStats.realtimeStats.value;
+            
+            user.updateRealtimeDps();
+            
+            if (oldDps !== user.damageStats.realtimeStats.value || 
+                oldHps !== user.healingStats.realtimeStats.value) {
+                hasUpdate = true;
+            }
+        }
+
+        return hasUpdate;
+    }
+
+    // 获取所有用户数据
+    getAllUsersData() {
+        const result = {};
+        for (const [uid, user] of this.users) {
+            result[uid] = user.getSummary();
+        }
+        return result;
+    }
+
+    // 清空所有数据
+    clearAll() {
+        this.users.clear();
+        dataChanged = true;
+    }
+}
+
+const userDataManager = new UserDataManager();
+
 async function main() {
-    print('Welcome to use Damage Counter for Star Resonance by Dimole!');
-    print('Version: V2.1');
+    print('Welcome to use Damage Counter for Star Resonance!');
+    print('Version: V2.2');
+    print('GitHub: https://github.com/dmlgzs/StarResonanceDamageCounter');
     for (let i = 0; i < devices.length; i++) {
         print(i + '.\t' + devices[i].description);
     }
@@ -106,42 +410,10 @@ async function main() {
         ]
     });
 
-    // 数据处理函数
-    function generateUserData() {
-        const user = {};
-        for (const uid of Object.keys(total_damage)) {
-            if (!user[uid]) user[uid] = {
-                realtime_dps: 0,
-                realtime_dps_max: 0,
-                total_dps: 0,
-                total_damage: {
-                    normal: 0,
-                    critical: 0,
-                    lucky: 0,
-                    crit_lucky: 0,
-                    hpLessen: 0,
-                    total: 0,
-                },
-                total_count: {
-                    normal: 0,
-                    critical: 0,
-                    lucky: 0,
-                    total: 0,
-                },
-            };
-            user[uid].total_damage = total_damage[uid];
-            user[uid].total_count = total_count[uid];
-            user[uid].total_dps = ((total_damage[uid].total) / (damage_time[uid][1] - damage_time[uid][0]) * 1000) || 0;
-            user[uid].realtime_dps = realtime_dps[uid] ? realtime_dps[uid].value : 0;
-            user[uid].realtime_dps_max = realtime_dps[uid] ? realtime_dps[uid].max : 0;
-        }
-        return user;
-    }
-
     // 推送数据到所有连接的客户端
     function pushDataToClients() {
         if (connectedClients.size > 0) {
-            const userData = generateUserData();
+            const userData = userDataManager.getAllUsersData();
             io.emit('dataUpdate', {
                 code: 0,
                 user: userData,
@@ -150,43 +422,18 @@ async function main() {
         }
     }
 
-    //瞬时DPS计算和数据推送
+    //瞬时DPS/HPS更新
     setInterval(() => {
+        const hasUpdate = userDataManager.updateAllRealtimeDps();
         const now = Date.now();
-        let hasRealtimeUpdate = false;
 
-        for (const uid of Object.keys(dps_window)) {
-            while (dps_window[uid].length > 0 && now - dps_window[uid][0].time > 1000) {
-                dps_window[uid].shift();
-            }
-            if (!realtime_dps[uid]) {
-                realtime_dps[uid] = {
-                    value: 0,
-                    max: 0,
-                }
-            }
-            const oldValue = realtime_dps[uid].value;
-            realtime_dps[uid].value = 0;
-            for (const b of dps_window[uid]) {
-                realtime_dps[uid].value += b.damage;
-            }
-            if (realtime_dps[uid].value > realtime_dps[uid].max) {
-                realtime_dps[uid].max = realtime_dps[uid].value;
-            }
-
-            // 检查是否有实时数据变化
-            if (oldValue !== realtime_dps[uid].value) {
-                hasRealtimeUpdate = true;
-            }
-        }
-
-        // 如果有数据变化或实时DPS更新，推送数据
-        if ((dataChanged || hasRealtimeUpdate) && now - lastPushTime >= PUSH_THROTTLE_MS) {
+        // 如果有数据变化或实时更新，推送数据
+        if ((dataChanged || hasUpdate) && now - lastPushTime >= PUSH_THROTTLE_MS) {
             pushDataToClients();
             dataChanged = false;
             lastPushTime = now;
         }
-    }, 50);
+    }, 100);
 
     //express
     app.use(cors());
@@ -194,7 +441,7 @@ async function main() {
 
     // 保留原先API，优先使用WebSocket
     app.get('/api/data', (req, res) => {
-        const userData = generateUserData();
+        const userData = userDataManager.getAllUsersData();
         const data = {
             code: 0,
             user: userData,
@@ -203,11 +450,16 @@ async function main() {
         res.json(data);
     });
     app.get('/api/clear', (req, res) => {
+        // 清空新的数据管理器
+        userDataManager.clearAll();
+        
+        // 同时清空旧的数据结构以保持兼容性
         total_damage = {};
         total_count = {};
         dps_window = {};
         damage_time = {};
         realtime_dps = {};
+        
         logger.info('Statistics have been cleared!');
 
         // 通知所有WebSocket客户端数据已清空
@@ -264,7 +516,7 @@ async function main() {
         connectedClients.add(socket.id);
 
         // 发送当前数据给新连接的客户端
-        const userData = generateUserData();
+        const userData = userDataManager.getAllUsersData();
         socket.emit('dataUpdate', {
             code: 0,
             user: userData,
@@ -274,11 +526,16 @@ async function main() {
         // 处理客户端请求清空数据
         socket.on('clearData', () => {
             try {
+                // 清空新的数据管理器
+                userDataManager.clearAll();
+                
+                // 同时清空旧的数据结构以保持兼容性
                 total_damage = {};
                 total_count = {};
                 dps_window = {};
                 damage_time = {};
                 realtime_dps = {};
+                
                 logger.info('Statistics cleared via WebSocket');
 
                 io.emit('dataCleared', {
@@ -427,77 +684,109 @@ async function main() {
                                     const hits = Array.isArray(b[7][2]) ? b[7][2] : [b[7][2]];
                                     for (const hit of hits) {
                                         const skill = hit[12];
-                                        if (typeof skill !== 'number') break; //可以用来区分伤害和治疗啥的，但我不想去导出它的表
-                                        const value = hit[6], luckyValue = hit[8], isCrit = hit[5], hpLessenValue = hit[9] ?? 0;
-                                        const damage = value ?? luckyValue;
-                                        const is_player = (BigInt(hit[21] || hit[11]) & 0xffffn) === 640n;
-                                        if (!is_player) break; //排除怪物攻击
-                                        const operator_uid = BigInt(hit[21] || hit[11]) >> 16n;
-                                        if (!operator_uid) break;
+                                        if (typeof skill !== 'number') continue;
+                                        const value = hit[6], luckyValue = hit[8], isMiss = !!hit[2], isCrit = !!hit[5], hpLessenValue = hit[9] ?? 0;
+                                        const isHeal = hit[4] === 2, isDead = !!hit[17], isLucky = !!luckyValue;
+                                        const operatorUUID = hit[11], targetUUID = b[1];
+                                        const damage = value ?? luckyValue ?? 0;
+                                        if (typeof damage !== 'number') continue;
+                                        const operator_is_player = (BigInt(operatorUUID) & 0xffffn) === 640n;
+                                        const target_is_player = (BigInt(targetUUID) & 0xffffn) === 640n;
+                                        const operator_uid = Number(BigInt(operatorUUID) >> 16n);
+                                        const target_uid = Number(BigInt(targetUUID) >> 16n);
+                                        if (!operator_uid) continue;
 
                                         // 检查统计状态，如果暂停则跳过数据记录
                                         if (!isStatsEnabled) {
                                             logger.debug('Statistics paused, skipping damage record for UID: ' + operator_uid);
-                                            break;
+                                            continue;
                                         }
 
-                                        //初始化
-                                        if (!total_damage[operator_uid]) total_damage[operator_uid] = {
-                                            normal: 0,
-                                            critical: 0,
-                                            lucky: 0,
-                                            crit_lucky: 0,
-                                            hpLessen: 0,
-                                            total: 0,
-                                        };
-                                        if (!total_count[operator_uid]) total_count[operator_uid] = {
-                                            normal: 0,
-                                            critical: 0,
-                                            lucky: 0,
-                                            total: 0,
-                                        };
+                                        let srcTargetStr = operator_is_player ? ('Src: ' + operator_uid) : ('SrcUUID: ' + operatorUUID);
+                                        srcTargetStr += target_is_player ? (' Tgt: ' + target_uid) : (' TgtUUID: ' + targetUUID);
 
-                                        if (isCrit) {
-                                            total_count[operator_uid].critical++;
-                                            if (luckyValue) {
-                                                total_damage[operator_uid].crit_lucky += damage;
-                                                total_count[operator_uid].lucky++;
-                                            } else {
-                                                total_damage[operator_uid].critical += damage;
+                                        if (target_is_player) { //玩家目标
+                                            if (isHeal) { //玩家被治疗
+                                                if (operator_is_player) { //只记录玩家造成的治疗
+                                                    userDataManager.addHealing(operator_uid, damage, isCrit, isLucky);
+                                                }
+                                            } else { //玩家受到伤害
+                                                userDataManager.addTakenDamage(target_uid, damage);
                                             }
-                                        } else if (luckyValue) {
-                                            total_damage[operator_uid].lucky += damage;
-                                            total_count[operator_uid].lucky++;
-                                        } else {
-                                            total_damage[operator_uid].normal += damage;
-                                            total_count[operator_uid].normal++;
-                                        }
-                                        total_damage[operator_uid].total += damage;
-                                        total_damage[operator_uid].hpLessen += hpLessenValue;
-                                        total_count[operator_uid].total++;
-                                        if (!dps_window[operator_uid]) dps_window[operator_uid] = [];
-                                        dps_window[operator_uid].push({
-                                            time: Date.now(),
-                                            damage,
-                                        });
-                                        if (!damage_time[operator_uid]) damage_time[operator_uid] = [];
-                                        if (damage_time[operator_uid][0]) {
-                                            damage_time[operator_uid][1] = Date.now();
-                                        } else {
-                                            damage_time[operator_uid][0] = Date.now();
+                                        } else { //非玩家目标
+                                            if (isHeal) { //非玩家被治疗
+                                                // 不处理非玩家的治疗
+                                            }
+                                            else { //非玩家受到伤害
+                                                if (operator_is_player) { //只记录玩家造成的伤害
+                                                    userDataManager.addDamage(operator_uid, damage, isCrit, isLucky, hpLessenValue);
+                                                }
+                                            }
                                         }
 
-                                        // 标记数据已更新，用于WebSocket推送
-                                        dataChanged = true;
+                                        // 判断职业
+                                        if (operator_is_player) {
+                                            let roleName;
+                                            switch (skill) {
+                                                case 1241:
+                                                    roleName = '射线';
+                                                    break;
+                                                case 55302:
+                                                    roleName = '协奏';
+                                                    break;
+                                                case 20301:
+                                                    roleName = '愈合';
+                                                    break;
+                                                case 1518:
+                                                    roleName = '惩戒';
+                                                    break;
+                                                case 2306:
+                                                    roleName = '狂音';
+                                                    break;
+                                                case 120902:
+                                                    roleName = '冰矛';
+                                                    break;
+                                                case 1714:
+                                                    roleName = '居合';
+                                                    break;
+                                                case 44701:
+                                                    roleName = '月刃';
+                                                    break;
+                                                case 220112:
+                                                case 2203622:
+                                                    roleName = '鹰弓';
+                                                    break;
+                                                case 1700827:
+                                                    roleName = '狼弓';
+                                                    break;
+                                                case 1419:
+                                                    roleName = '空枪';
+                                                    break;
+                                                case 1418:
+                                                    roleName = '重装';
+                                                    break;
+                                                case 2405:
+                                                    roleName = '防盾';
+                                                    break;
+                                                case 2406:
+                                                    roleName = '光盾';
+                                                    break;
+                                                case 199902:
+                                                    roleName = '岩盾';
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            if (roleName) userDataManager.setProfession(operator_uid, roleName);
+                                        }
+
                                         let extra = [];
                                         if (isCrit) extra.push('Crit');
-                                        if (luckyValue) extra.push('Lucky');
+                                        if (isLucky) extra.push('Lucky');
                                         if (extra.length === 0) extra = ['Normal'];
 
-                                        logger.info('User: ' + operator_uid + ' Skill: ' + skill + ' Damage/Healing: ' + damage +
-                                                    ' HpLessen: ' + hpLessenValue +
-                                                    ' Extra: ' + extra.join('|')
-                                            );
+                                        const actionType = isHeal ? 'Healing' : 'Damage';
+                                        logger.info(`${srcTargetStr} Skill/Buff: ${skill} ${actionType}: ${damage}${isHeal ? '' : ` HpLessen: ${hpLessenValue}`} Extra: ${extra.join('|')}`);
                                     }
                                 } else {
                                     //logger.debug(data1.toString('hex'));
