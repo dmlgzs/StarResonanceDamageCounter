@@ -367,16 +367,33 @@ async function main() {
     for (let i = 0; i < devices.length; i++) {
         print(i + '.\t' + devices[i].description);
     }
-    const num = await ask('Please enter the number of the device used for packet capture: ');
-    if (!devices[num]) {
-        print('Cannot find device ' + num + '!');
-        process.exit(1);
+    
+    // 从命令行参数获取设备号和日志级别
+    const args = process.argv.slice(2);
+    let num = args[0];
+    let log_level = args[1];
+
+    // 参数验证函数
+    function isValidLogLevel(level) {
+        return ['info', 'debug'].includes(level);
     }
-    const log_level = await ask('Please enter log level (info|debug): ') || 'info';
-    if (!log_level || !['info', 'debug'].includes(log_level)) {
-        print('Invalid log level!');
-        process.exit(1);
+
+    // 如果命令行没传或者不合法，使用交互
+    if (num === undefined || !devices[num]) {
+        num = await ask('Please enter the number of the device used for packet capture: ');
+        if (!devices[num]) {
+            print('Cannot find device ' + num + '!');
+            process.exit(1);
+        }
     }
+    if (log_level === undefined || !isValidLogLevel(log_level)) {
+        log_level = await ask('Please enter log level (info|debug): ') || 'info';
+        if (!isValidLogLevel(log_level)) {
+            print('Invalid log level!');
+            process.exit(1);
+        }
+    }
+    
     rl.close();
     const logger = winston.createLogger({
         level: log_level,

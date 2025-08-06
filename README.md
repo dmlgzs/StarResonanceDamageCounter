@@ -58,6 +58,22 @@
    ```bash
    node server.js
    ```
+   
+   运行后将提示你：
+   - 选择用于抓包的网络设备（可通过控制面板查看网卡信息）
+   - 选择日志等级（`info`：基础信息，`debug`：详细日志）
+   
+   你也可以通过命令行参数直接指定：
+
+   ```bash
+   node server.js <device_number> <log_level>
+   ```
+
+   例如：
+   
+   ```bash
+   node server.js 4 info
+   ```
 
 ### 使用方法
 
