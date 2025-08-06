@@ -1,10 +1,11 @@
 const cap = require('cap');
+const cors = require('cors');
 const readline = require('readline');
 const winston = require("winston");
+const net = require('net');
 const zlib = require('zlib');
 const express = require('express');
-const cors = require('cors');
-const { createServer } = require('http');
+const http = require('http');
 const { Server } = require('socket.io');
 const pb = require('./algo/pb');
 const Readable = require("stream").Readable;
@@ -13,13 +14,6 @@ const decoders = cap.decoders;
 const PROTOCOL = decoders.PROTOCOL;
 const print = console.log;
 const app = express();
-const server = createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -58,24 +52,7 @@ class Lock {
     }
 }
 
-let total_damage = {};
-let total_count = {};
-let dps_window = {};
-let damage_time = {};
-let realtime_dps = {};
-
-// 统计状态控制
-let isStatsEnabled = true;
-
-// WebSocket连接管理
-let connectedClients = new Set();
-
-// 数据更新标志，用于批量推送
-let dataChanged = false;
-let lastPushTime = 0;
-const PUSH_THROTTLE_MS = 100; // 限制推送频率为100ms
-
-/** 统计数据类 - 用于统计伤害或治疗数据 */
+// 通用统计类，用于处理伤害或治疗数据
 class StatisticData {
     constructor() {
         this.stats = {
@@ -100,11 +77,11 @@ class StatisticData {
         };
     }
 
-    /** 添加记录
-     * @param {number} value - 数值（伤害或治疗）
-     * @param {boolean} isCrit - 是否暴击
-     * @param {boolean} isLucky - 是否幸运
-     * @param {number} hpLessenValue - HP减少值（仅用于伤害）
+    /** 添加数据记录
+     * @param {number} value - 数值
+     * @param {boolean} isCrit - 是否为暴击
+     * @param {boolean} isLucky - 是否为幸运
+     * @param {number} hpLessenValue - 生命值减少量（仅伤害使用）
      */
     addRecord(value, isCrit, isLucky, hpLessenValue = 0) {
         const now = Date.now();
@@ -135,49 +112,51 @@ class StatisticData {
             this.count.normal++;
         }
         this.count.total++;
+
         this.realtimeWindow.push({
             time: now,
             value,
         });
 
-        // 更新时间范围
-        if (this.timeRange.length === 0) {
-            this.timeRange = [now, now];
-        } else {
+        if (this.timeRange[0]) {
             this.timeRange[1] = now;
+        } else {
+            this.timeRange[0] = now;
         }
     }
 
-    /** 更新实时统计（过去1秒内的数据） */
+    /** 更新实时统计 */
     updateRealtimeStats() {
         const now = Date.now();
-        const cutoff = now - 1000; // 1秒前
 
-        // 清理过期数据
-        this.realtimeWindow = this.realtimeWindow.filter(entry => entry.time > cutoff);
+        // 清除超过1秒的数据
+        while (this.realtimeWindow.length > 0 && now - this.realtimeWindow[0].time > 1000) {
+            this.realtimeWindow.shift();
+        }
 
-        // 计算实时值
-        const oldValue = this.realtimeStats.value;
-        this.realtimeStats.value = this.realtimeWindow.reduce((sum, entry) => sum + entry.value, 0);
+        // 计算当前实时值
+        this.realtimeStats.value = 0;
+        for (const entry of this.realtimeWindow) {
+            this.realtimeStats.value += entry.value;
+        }
 
         // 更新最大值
         if (this.realtimeStats.value > this.realtimeStats.max) {
             this.realtimeStats.max = this.realtimeStats.value;
         }
-
-        return oldValue !== this.realtimeStats.value;
     }
 
-    /** 获取总的每秒平均值 */
+    /** 计算总的每秒统计值 */
     getTotalPerSecond() {
-        if (this.timeRange.length < 2 || this.timeRange[1] <= this.timeRange[0]) {
+        if (!this.timeRange[0] || !this.timeRange[1]) {
             return 0;
         }
-        const duration = this.timeRange[1] - this.timeRange[0];
-        return (this.stats.total / duration) * 1000;
+        const totalPerSecond = (this.stats.total / (this.timeRange[1] - this.timeRange[0]) * 1000) || 0;
+        if (!Number.isFinite(totalPerSecond)) return 0;
+        return totalPerSecond;
     }
 
-    /** 重置所有数据 */
+    /** 重置数据 */
     reset() {
         this.stats = {
             normal: 0,
@@ -202,7 +181,6 @@ class StatisticData {
     }
 }
 
-/** 用户数据类 */
 class UserData {
     constructor(uid) {
         this.uid = uid;
@@ -214,9 +192,9 @@ class UserData {
 
     /** 添加伤害记录
      * @param {number} damage - 伤害值
-     * @param {boolean} isCrit - 是否暴击
-     * @param {boolean} isLucky - 是否幸运
-     * @param {number} hpLessenValue - HP减少值
+     * @param {boolean} isCrit - 是否为暴击
+     * @param {boolean} [isLucky] - 是否为幸运
+     * @param {number} hpLessenValue - 生命值减少量
      */
     addDamage(damage, isCrit, isLucky, hpLessenValue = 0) {
         this.damageStats.addRecord(damage, isCrit, isLucky, hpLessenValue);
@@ -224,21 +202,23 @@ class UserData {
 
     /** 添加治疗记录
      * @param {number} healing - 治疗值
-     * @param {boolean} isCrit - 是否暴击
-     * @param {boolean} isLucky - 是否幸运
+     * @param {boolean} isCrit - 是否为暴击
+     * @param {boolean} [isLucky] - 是否为幸运
      */
     addHealing(healing, isCrit, isLucky) {
         this.healingStats.addRecord(healing, isCrit, isLucky);
     }
 
     /** 添加承伤记录
-     * @param {number} damage - 承受的伤害
-     */
+     * @param {number} damage - 承受的伤害值
+     * */
     addTakenDamage(damage) {
         this.takenDamage += damage;
     }
 
-    /** 设置职业 */
+    /** 设置职业
+     * @param {string} profession - 职业名称
+     * */
     setProfession(profession) {
         this.profession = profession;
     }
@@ -249,12 +229,12 @@ class UserData {
         this.healingStats.updateRealtimeStats();
     }
 
-    /** 获取总DPS */
+    /** 计算总DPS */
     getTotalDps() {
         return this.damageStats.getTotalPerSecond();
     }
 
-    /** 获取总HPS */
+    /** 计算总HPS */
     getTotalHps() {
         return this.healingStats.getTotalPerSecond();
     }
@@ -268,6 +248,7 @@ class UserData {
             total: this.damageStats.count.total + this.healingStats.count.total,
         };
     }
+
     /** 获取用户数据摘要 */
     getSummary() {
         return {
@@ -285,7 +266,7 @@ class UserData {
         };
     }
 
-    /** 重置用户数据 */
+    /** 重置数据 预留 */
     reset() {
         this.damageStats.reset();
         this.healingStats.reset();
@@ -294,89 +275,95 @@ class UserData {
     }
 }
 
-// 用户数据管理器类
+// 用户数据管理器
 class UserDataManager {
     constructor() {
-        this.users = new Map(); // 使用Map存储UserData实例
+        this.users = new Map();
     }
 
-    // 获取或创建用户数据
-    getOrCreateUser(uid) {
+    /** 获取或创建用户记录
+     * @param {number} uid - 用户ID
+     * @returns {UserData} - 用户数据实例
+     */
+    getUser(uid) {
         if (!this.users.has(uid)) {
             this.users.set(uid, new UserData(uid));
         }
         return this.users.get(uid);
     }
 
-    // 添加伤害数据
-    addDamage(uid, damage, isCrit, isLucky, hpLessen = 0) {
-        if (!isStatsEnabled) return;
-        
-        const user = this.getOrCreateUser(uid);
-        user.addDamage(damage, isCrit, isLucky, hpLessen);
-        dataChanged = true;
+    /** 添加伤害记录
+     * @param {number} uid - 造成伤害的用户ID
+     * @param {number} damage - 伤害值
+     * @param {boolean} isCrit - 是否为暴击
+     * @param {boolean} [isLucky] - 是否为幸运
+     * @param {number} hpLessenValue - 生命值减少量
+     */
+    addDamage(uid, damage, isCrit, isLucky, hpLessenValue = 0) {
+        const user = this.getUser(uid);
+        user.addDamage(damage, isCrit, isLucky, hpLessenValue);
     }
 
-    // 添加治疗数据
+    /** 添加治疗记录
+     * @param {number} uid - 进行治疗的用户ID
+     * @param {number} healing - 治疗值
+     * @param {boolean} isCrit - 是否为暴击
+     * @param {boolean} [isLucky] - 是否为幸运
+     */
     addHealing(uid, healing, isCrit, isLucky) {
-        if (!isStatsEnabled) return;
-        
-        const user = this.getOrCreateUser(uid);
+        const user = this.getUser(uid);
         user.addHealing(healing, isCrit, isLucky);
-        dataChanged = true;
     }
 
-    // 添加承受伤害数据
+    /** 添加承伤记录
+     * @param {number} uid - 承受伤害的用户ID
+     * @param {number} damage - 承受的伤害值
+     * */
     addTakenDamage(uid, damage) {
-        if (!isStatsEnabled) return;
-        
-        const user = this.getOrCreateUser(uid);
+        const user = this.getUser(uid);
         user.addTakenDamage(damage);
-        dataChanged = true;
     }
 
-    // 设置用户职业
+    /** 设置用户职业
+     * @param {number} uid - 用户ID
+     * @param {string} profession - 职业名称
+     * */
     setProfession(uid, profession) {
-        const user = this.getOrCreateUser(uid);
+        const user = this.getUser(uid);
         user.setProfession(profession);
     }
 
-    // 更新所有用户的实时DPS/HPS
+    /** 更新所有用户的实时DPS和HPS */
     updateAllRealtimeDps() {
-        let hasUpdate = false;
-
-        for (const [uid, user] of this.users) {
-            const oldDps = user.damageStats.realtimeStats.value;
-            const oldHps = user.healingStats.realtimeStats.value;
-            
+        for (const user of this.users.values()) {
             user.updateRealtimeDps();
-            
-            if (oldDps !== user.damageStats.realtimeStats.value || 
-                oldHps !== user.healingStats.realtimeStats.value) {
-                hasUpdate = true;
-            }
         }
-
-        return hasUpdate;
     }
 
-    // 获取所有用户数据
+    /** 获取所有用户数据 */
     getAllUsersData() {
         const result = {};
-        for (const [uid, user] of this.users) {
+        for (const [uid, user] of this.users.entries()) {
             result[uid] = user.getSummary();
         }
         return result;
     }
 
-    // 清空所有数据
+    /** 清除所有用户数据 */
     clearAll() {
         this.users.clear();
-        dataChanged = true;
+    }
+
+    /** 获取用户列表 */
+    getUserIds() {
+        return Array.from(this.users.keys());
     }
 }
 
 const userDataManager = new UserDataManager();
+
+// 暂停统计状态
+let isPaused = false;
 
 async function main() {
     print('Welcome to use Damage Counter for Star Resonance!');
@@ -385,16 +372,33 @@ async function main() {
     for (let i = 0; i < devices.length; i++) {
         print(i + '.\t' + devices[i].description);
     }
-    const num = await ask('Please enter the number of the device used for packet capture: ');
-    if (!devices[num]) {
-        print('Cannot find device ' + num + '!');
-        process.exit(1);
+    
+    // 从命令行参数获取设备号和日志级别
+    const args = process.argv.slice(2);
+    let num = args[0];
+    let log_level = args[1];
+
+    // 参数验证函数
+    function isValidLogLevel(level) {
+        return ['info', 'debug'].includes(level);
     }
-    const log_level = await ask('Please enter log level (info|debug): ') || 'info';
-    if (!log_level || !['info', 'debug'].includes(log_level)) {
-        print('Invalid log level!');
-        process.exit(1);
+
+    // 如果命令行没传或者不合法，使用交互
+    if (num === undefined || !devices[num]) {
+        num = await ask('Please enter the number of the device used for packet capture: ');
+        if (!devices[num]) {
+            print('Cannot find device ' + num + '!');
+            process.exit(1);
+        }
     }
+    if (log_level === undefined || !isValidLogLevel(log_level)) {
+        log_level = await ask('Please enter log level (info|debug): ') || 'info';
+        if (!isValidLogLevel(log_level)) {
+            print('Invalid log level!');
+            process.exit(1);
+        }
+    }
+    
     rl.close();
     const logger = winston.createLogger({
         level: log_level,
@@ -410,229 +414,86 @@ async function main() {
         ]
     });
 
-    // 推送数据到所有连接的客户端
-    function pushDataToClients() {
-        if (connectedClients.size > 0) {
-            const userData = userDataManager.getAllUsersData();
-            io.emit('dataUpdate', {
-                code: 0,
-                user: userData,
-                timestamp: Date.now()
-            });
-        }
-    }
-
-    //瞬时DPS/HPS更新
+    //瞬时DPS更新
     setInterval(() => {
-        const hasUpdate = userDataManager.updateAllRealtimeDps();
-        const now = Date.now();
-
-        // 如果有数据变化或实时更新，推送数据
-        if ((dataChanged || hasUpdate) && now - lastPushTime >= PUSH_THROTTLE_MS) {
-            pushDataToClients();
-            dataChanged = false;
-            lastPushTime = now;
+        if (!isPaused) {
+            userDataManager.updateAllRealtimeDps();
         }
     }, 100);
 
-    //express
+    //express 和 socket.io 设置
     app.use(cors());
+    app.use(express.json()); // 解析JSON请求体
     app.use(express.static('public'));
+    const server = http.createServer(app);
+    const io = new Server(server, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
+    });
 
-    // 保留原先API，优先使用WebSocket
     app.get('/api/data', (req, res) => {
         const userData = userDataManager.getAllUsersData();
         const data = {
             code: 0,
             user: userData,
-            timestamp: Date.now()
         };
         res.json(data);
     });
     app.get('/api/clear', (req, res) => {
-        // 清空新的数据管理器
         userDataManager.clearAll();
-        
-        // 同时清空旧的数据结构以保持兼容性
-        total_damage = {};
-        total_count = {};
-        dps_window = {};
-        damage_time = {};
-        realtime_dps = {};
-        
         logger.info('Statistics have been cleared!');
-
-        // 通知所有WebSocket客户端数据已清空
-        io.emit('dataCleared', {
-            code: 0,
-            msg: 'Statistics have been cleared!',
-            timestamp: Date.now()
-        });
-
         res.json({
             code: 0,
             msg: 'Statistics have been cleared!',
         });
     });
 
-    // 统计控制API
-    app.post('/api/stats/start', (req, res) => {
-        isStatsEnabled = true;
-        logger.info('Statistics started!');
-
-        // 通知所有WebSocket客户端统计已开始
-        io.emit('statsStarted', {
-            code: 0,
-            msg: 'Statistics started!',
-            timestamp: Date.now()
-        });
-
+    // 暂停/开始统计API
+    app.post('/api/pause', (req, res) => {
+        const { paused } = req.body;
+        isPaused = paused;
+        logger.info(`Statistics ${isPaused ? 'paused' : 'resumed'}!`);
         res.json({
             code: 0,
-            msg: 'Statistics started!',
+            msg: `Statistics ${isPaused ? 'paused' : 'resumed'}!`,
+            paused: isPaused
         });
     });
 
-    app.post('/api/stats/pause', (req, res) => {
-        isStatsEnabled = false;
-        logger.info('Statistics paused!');
-
-        // 通知所有WebSocket客户端统计已暂停
-        io.emit('statsPaused', {
-            code: 0,
-            msg: 'Statistics paused!',
-            timestamp: Date.now()
-        });
-
+    // 获取暂停状态API
+    app.get('/api/pause', (req, res) => {
         res.json({
             code: 0,
-            msg: 'Statistics paused!',
+            paused: isPaused
         });
     });
 
-    // WebSocket连接处理
+    // WebSocket 连接处理
     io.on('connection', (socket) => {
-        logger.info(`WebSocket client connected: ${socket.id}`);
-        connectedClients.add(socket.id);
-
-        // 发送当前数据给新连接的客户端
-        const userData = userDataManager.getAllUsersData();
-        socket.emit('dataUpdate', {
-            code: 0,
-            user: userData,
-            timestamp: Date.now()
-        });
-
-        // 处理客户端请求清空数据
-        socket.on('clearData', () => {
-            try {
-                // 清空新的数据管理器
-                userDataManager.clearAll();
-                
-                // 同时清空旧的数据结构以保持兼容性
-                total_damage = {};
-                total_count = {};
-                dps_window = {};
-                damage_time = {};
-                realtime_dps = {};
-                
-                logger.info('Statistics cleared via WebSocket');
-
-                io.emit('dataCleared', {
-                    code: 0,
-                    msg: 'Statistics have been cleared!',
-                    timestamp: Date.now()
-                });
-            } catch (error) {
-                logger.error('Error clearing data via WebSocket:', error);
-                socket.emit('error', {
-                    code: 1,
-                    msg: 'Failed to clear data',
-                    error: error.message
-                });
-            }
-        });
-
-        // 处理统计控制
-        socket.on('startStats', () => {
-            try {
-                isStatsEnabled = true;
-                logger.info('Statistics started via WebSocket');
-
-                io.emit('statsStarted', {
-                    code: 0,
-                    msg: 'Statistics started!',
-                    timestamp: Date.now()
-                });
-            } catch (error) {
-                logger.error('Error starting stats via WebSocket:', error);
-                socket.emit('error', {
-                    code: 1,
-                    msg: 'Failed to start statistics',
-                    error: error.message
-                });
-            }
-        });
-
-        socket.on('pauseStats', () => {
-            try {
-                isStatsEnabled = false;
-                logger.info('Statistics paused via WebSocket');
-
-                io.emit('statsPaused', {
-                    code: 0,
-                    msg: 'Statistics paused!',
-                    timestamp: Date.now()
-                });
-            } catch (error) {
-                logger.error('Error pausing stats via WebSocket:', error);
-                socket.emit('error', {
-                    code: 1,
-                    msg: 'Failed to pause statistics',
-                    error: error.message
-                });
-            }
-        });
-
-        // 处理心跳检测
-        socket.on('ping', () => {
-            socket.emit('pong', { timestamp: Date.now() });
-        });
-
-        // 处理断开连接
-        socket.on('disconnect', (reason) => {
-            logger.info(`WebSocket client disconnected: ${socket.id}, reason: ${reason}`);
-            connectedClients.delete(socket.id);
-        });
-
-        // 处理连接错误
-        socket.on('error', (error) => {
-            logger.error(`WebSocket error for client ${socket.id}:`, error);
-            connectedClients.delete(socket.id);
+        logger.info('WebSocket client connected: ' + socket.id);
+        
+        socket.on('disconnect', () => {
+            logger.info('WebSocket client disconnected: ' + socket.id);
         });
     });
 
-    // WebSocket健康状态检查
+    // 每50ms广播数据给所有WebSocket客户端
     setInterval(() => {
-        const connectedCount = connectedClients.size;
-        if (connectedCount > 0) {
-            logger.debug(`Active WebSocket connections: ${connectedCount}`);
+        if (!isPaused) {
+            const userData = userDataManager.getAllUsersData();
+            const data = {
+                code: 0,
+                user: userData,
+            };
+            io.emit('data', data);
         }
-
-        // 清理无效连接
-        const validClients = new Set();
-        for (const clientId of connectedClients) {
-            const clientSocket = io.sockets.sockets.get(clientId);
-            if (clientSocket && clientSocket.connected) {
-                validClients.add(clientId);
-            }
-        }
-        connectedClients = validClients;
-    }, 30000); // 每30秒检查一次
+    }, 50);
 
     server.listen(8989, () => {
         logger.info('Web Server started at http://localhost:8989');
-        logger.info('WebSocket server is running on the same port');
+        logger.info('WebSocket Server started');
     });
 
     logger.info('Welcome!');
@@ -648,6 +509,9 @@ async function main() {
     const tcp_lock = new Lock();
 
     const processPacket = (buf) => {
+        // 暂停时不处理数据包
+        if (isPaused) return;
+        
         try {
             if (buf.length < 32) return;
             if (buf[4] & 0x80) {//zstd
@@ -696,15 +560,8 @@ async function main() {
                                         const target_uid = Number(BigInt(targetUUID) >> 16n);
                                         if (!operator_uid) continue;
 
-                                        // 检查统计状态，如果暂停则跳过数据记录
-                                        if (!isStatsEnabled) {
-                                            logger.debug('Statistics paused, skipping damage record for UID: ' + operator_uid);
-                                            continue;
-                                        }
-
                                         let srcTargetStr = operator_is_player ? ('Src: ' + operator_uid) : ('SrcUUID: ' + operatorUUID);
                                         srcTargetStr += target_is_player ? (' Tgt: ' + target_uid) : (' TgtUUID: ' + targetUUID);
-
                                         if (target_is_player) { //玩家目标
                                             if (isHeal) { //玩家被治疗
                                                 if (operator_is_player) { //只记录玩家造成的治疗
@@ -715,7 +572,6 @@ async function main() {
                                             }
                                         } else { //非玩家目标
                                             if (isHeal) { //非玩家被治疗
-                                                // 不处理非玩家的治疗
                                             }
                                             else { //非玩家受到伤害
                                                 if (operator_is_player) { //只记录玩家造成的伤害
@@ -724,7 +580,7 @@ async function main() {
                                             }
                                         }
 
-                                        // 判断职业
+                                        //判断职业
                                         if (operator_is_player) {
                                             let roleName;
                                             switch (skill) {
@@ -786,7 +642,10 @@ async function main() {
                                         if (extra.length === 0) extra = ['Normal'];
 
                                         const actionType = isHeal ? 'Healing' : 'Damage';
-                                        logger.info(`${srcTargetStr} Skill/Buff: ${skill} ${actionType}: ${damage}${isHeal ? '' : ` HpLessen: ${hpLessenValue}`} Extra: ${extra.join('|')}`);
+                                        logger.info(srcTargetStr + ' Skill/Buff: ' + skill + ' ' + actionType + ': ' + damage +
+                                            (isHeal ? '' : ' HpLessen: ' + hpLessenValue) +
+                                            ' Extra: ' + extra.join('|')
+                                        );
                                     }
                                 } else {
                                     //logger.debug(data1.toString('hex'));
@@ -821,7 +680,7 @@ async function main() {
     const buffer = Buffer.alloc(65535);
     const linkType = c.open(device, filter, bufSize, buffer);
     c.setMinBytes && c.setMinBytes(0);
-    c.on('packet', async function (_nbytes, _trunc) {
+    c.on('packet', async function (nbytes, trunc) {
         const buffer1 = Buffer.from(buffer);
         if (linkType === 'ETHERNET') {
             var ret = decoders.Ethernet(buffer1);
@@ -851,7 +710,7 @@ async function main() {
                     if (current_server !== src_server) {
                         try {
                             //尝试通过小包识别服务器
-                            if (buf[4] === 0) {
+                            if (buf[4] == 0) {
                                 const data = buf.subarray(10);
                                 if (data.length) {
                                     const stream = Readable.from(data, { objectMode: false });
