@@ -309,16 +309,17 @@
                     <th rowspan="2" title="角色唯一标识符/自定义昵称">角色昵称</th>
                     <th rowspan="2" title="角色职业">职业</th>
                     <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
-                    <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
-                    <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
-                    <th class="damage-main-col" colspan="4">伤害</th>
-                    <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
+                    <th class="damage-main-col" colspan="7">伤害</th>
+                    <th class="damage-simple-col" style="display: none;" colspan="4">伤害</th>
                     <th colspan="3">DPS</th>
-                    <th class="healing-main-col" colspan="4">治疗</th>
-                    <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
+                    <th class="healing-main-col" colspan="7">治疗</th>
+                    <th class="healing-simple-col" style="display: none;" colspan="4">治疗</th>
                     <th colspan="3">HPS</th>
                 </tr>
                 <tr>
+                    <th title="角色在战斗中的暴击触发率">暴击率</th>
+                    <th title="角色在战斗中的幸运触发率">幸运率</th>
+                    <th title="角色在战斗中的暴幸触发率">暴幸率</th>
                     <th title="角色在战斗中造成的总伤害">总伤害</th>
                     <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
                     <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
@@ -326,6 +327,9 @@
                     <th title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
                     <th title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
                     <th title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
+                    <th title="角色在战斗中的暴击触发率">暴击率</th>
+                    <th title="角色在战斗中的幸运触发率">幸运率</th>
+                    <th title="角色在战斗中的暴幸触发率">暴幸率</th>
                     <th title="角色在战斗中造成的总治疗量">总治疗</th>
                     <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
                     <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
@@ -468,9 +472,16 @@
                 
                 // 生成表格行
                 for (const user of visibleUserArray) {
-                    const crit_rate = user.total_count.critical / user.total_count.total;
-                    const lucky_rate = user.total_count.lucky / user.total_count.total;
+                    const damageCounts = user.damage_counts || { total: 0, critical: 0, lucky: 0, crit_lucky: 0 };
+                    const healingCounts = user.healing_counts || { total: 0, critical: 0, lucky: 0, crit_lucky: 0 };
                     
+                    const damage_crit_rate = damageCounts.total > 0 ? damageCounts.critical / damageCounts.total : 0;
+                    const damage_lucky_rate = damageCounts.total > 0 ? damageCounts.lucky / damageCounts.total : 0;
+                    const damage_crit_lucky_rate = damageCounts.total > 0 ? damageCounts.crit_lucky / damageCounts.total : 0;
+
+                    const healing_crit_rate = healingCounts.total > 0 ? healingCounts.critical / healingCounts.total : 0;
+                    const healing_lucky_rate = healingCounts.total > 0 ? healingCounts.lucky / healingCounts.total : 0;
+                    const healing_crit_lucky_rate = healingCounts.total > 0 ? healingCounts.crit_lucky / healingCounts.total : 0; 
                     const row = document.createElement('tr');
                     
                     // 昵称列
@@ -486,8 +497,9 @@
                     const otherCells = [
                         user.profession || '未知',
                         user.taken_damage,
-                        `${(crit_rate * 100).toFixed(2)}%`,
-                        `${(lucky_rate * 100).toFixed(2)}%`,
+                        `${(damage_crit_rate * 100).toFixed(2)}%`, // 新增
+                        `${(damage_lucky_rate * 100).toFixed(2)}%`, // 新增
+                        `${(damage_crit_lucky_rate * 100).toFixed(2)}%`, // 新增
                         user.total_damage.total,
                         // 简洁模式下跳过伤害详细列
                         ...(isSimpleMode ? [] : [
@@ -498,6 +510,11 @@
                         user.realtime_dps,
                         user.realtime_dps_max,
                         user.total_dps.toFixed(2),
+                        user.total_healing.total,
+                        // --- 治疗部分 ---
+                        `${(healing_crit_rate * 100).toFixed(2)}%`, // 新增
+                        `${(healing_lucky_rate * 100).toFixed(2)}%`, // 新增
+                        `${(healing_crit_lucky_rate * 100).toFixed(2)}%`, // 新增
                         user.total_healing.total,
                         // 简洁模式下跳过治疗详细列
                         ...(isSimpleMode ? [] : [
