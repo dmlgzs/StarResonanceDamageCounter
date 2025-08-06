@@ -176,6 +176,64 @@
         .dark-mode label {
             color: #e0e0e0 !important;
         }
+
+        /* 用户控制组件样式 */
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 13px;
+        }
+
+        .user-controls input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .user-nickname-input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 120px;
+        }
+
+        .user-uid {
+            color: #666;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .dark-mode .user-controls {
+            background: #3d3d3d !important;
+            border-color: #555 !important;
+            color: #e0e0e0 !important;
+        }
+
+        .dark-mode .user-nickname-input {
+            background: #424242 !important;
+            color: #e0e0e0 !important;
+            border-color: #666 !important;
+        }
+
+        .dark-mode .user-uid {
+            color: #aaa !important;
+        }
+
+        .dark-mode #chartControlPanel {
+            background: #2d2d2d !important;
+            border-color: #555 !important;
+        }
+
+        .dark-mode #chartControlPanel h4 {
+            color: #4fc3f7 !important;
+        }
     </style>
 </head>
 
@@ -194,6 +252,32 @@
     <button onclick="clearData()">✨ 清空统计数据</button>
     <button id="statsToggleBtn" onclick="toggleStats()">⏸️ 暂停统计</button>
     <button onclick="toggleDarkMode()">🌙 夜间模式</button>
+
+    <!-- DPS图表容器 -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 15px; color: #2c3e50;">📊 实时DPS图表</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+                <button onclick="toggleChartPanel()" style="margin-right: 10px;">⚙️ 图表设置</button>
+                <span id="chartStatus" style="color: #666; font-size: 12px;">加载中...</span>
+            </div>
+        </div>
+        <div id="dpsChart" style="width: 100%; height: 400px;"></div>
+        
+        <!-- 用户控制面板 -->
+        <div id="chartControlPanel" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0; color: #2c3e50;">用户显示设置</h4>
+                <div>
+                    <button onclick="toggleAllUsers()" style="margin-right: 5px; padding: 5px 10px; font-size: 12px;">全选/取消</button>
+                    <button onclick="clearNicknames()" style="padding: 5px 10px; font-size: 12px; background-color: #dc3545; color: white;">清空昵称</button>
+                </div>
+            </div>
+            <div id="userControlsList" class="user-controls-container" style="max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px;">
+                <!-- 用户控制项将动态生成 -->
+            </div>
+        </div>
+    </div>
 
     <div class="card">
         <table id="damageTable">
@@ -221,14 +305,41 @@
     <footer style="margin-top: 40px; font-size: 14px; color: #888;">Copyright © 2025 Made with ❤️ by <a href="https://dml.ink" target="_blank">Dimole</a></footer>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="echarts.min.js"></script>
     <script>
         let currentSortMode = 'uid'; // 默认按UID排序
+        
+        // WebSocket相关变量
         let socket = null;
         let connectionStatus = 'disconnected';
         let lastDataUpdate = 0;
         let isStatsRunning = true; // 默认开启统计
         let useApiPolling = false; // 是否使用API轮询模式
         let apiPollingInterval = null; // API轮询定时器
+        
+        // 图表相关变量
+        let userNicknames = JSON.parse(localStorage.getItem('userNicknames') || '{}');
+        let visibleUsers = JSON.parse(localStorage.getItem('visibleUsers') || '{}');
+        let dpsHistory = {}; // 存储每个用户的DPS历史数据
+        let chart = null;
+        const HISTORY_DURATION_SECONDS = 60; // 历史记录时长（秒）
+        const HISTORY_FREQUENCY_PER_SECOND = 10; // 每秒记录次数
+        const MAX_HISTORY_LENGTH = HISTORY_DURATION_SECONDS * HISTORY_FREQUENCY_PER_SECOND; // 60秒 * 10次/秒
+        let chartDatasetMap = {}; // 缓存数据集索引，避免重建
+        let lastChartUpdateTime = 0;
+        let chartInitialized = false; // 标记图表是否已初始化
+        
+        // 多用户性能优化配置
+        const CHART_CONFIG = {
+            MAX_VISIBLE_USERS: 20, // 最多同时显示的用户数
+            PERFORMANCE_MODE_THRESHOLD: 15, // 超过此数量启用性能模式
+            UPDATE_INTERVAL_NORMAL: 33, // 正常模式更新间隔(30fps)
+            UPDATE_INTERVAL_PERFORMANCE: 100, // 性能模式更新间隔(10fps)
+            DATA_POINT_LIMIT: 300 // 性能模式下的数据点限制(30秒)
+        };
+        
+        let performanceMode = false;
+        let userPriorityCache = {}; // 用户优先级缓存
 
         // 连接状态指示器
         function createConnectionIndicator() {
@@ -293,6 +404,15 @@
                     id: Number(id),
                     ...data.user[id]
                 }));
+                
+                // 更新DPS历史数据
+                updateDpsHistory(userArray);
+                
+                // 更新图表
+                updateChart(userArray);
+                
+                // 更新用户控制列表
+                updateUserControlsList(userArray);
                 
                 // 根据当前排序模式排序
                 sortUserArray(userArray);
@@ -564,10 +684,450 @@
                 document.getElementById('sortSelect').value = savedSortMode;
             }
         }
+
+        // 用户优先级计算 - 基于DPS和活跃度
+        function calculateUserPriority(userId, userArray) {
+            const user = userArray.find(u => u.id.toString() === userId);
+            if (!user) return 0;
+            
+            const dpsScore = user.realtime_dps_max || 0;
+            const totalDamageScore = (user.total_damage?.total || 0) / 100000; // 归一化
+            const activityScore = dpsHistory[userId] ? 
+                dpsHistory[userId].filter(p => p.dps > 0).length : 0;
+            
+            // 手动设置昵称的用户优先级更高
+            const nicknameBonus = userNicknames[userId] ? 1000 : 0;
+            
+            return dpsScore + totalDamageScore + activityScore + nicknameBonus;
+        }
+        
+        // 获取优先显示的用户列表
+        function getTopPriorityUsers(userArray, maxCount) {
+            const userIds = Object.keys(dpsHistory).filter(userId => 
+                visibleUsers[userId] !== false && 
+                dpsHistory[userId] && 
+                dpsHistory[userId].length > 0
+            );
+            
+            // 计算并缓存优先级
+            userIds.forEach(userId => {
+                userPriorityCache[userId] = calculateUserPriority(userId, userArray);
+            });
+            
+            // 按优先级排序并限制数量
+            return userIds
+                .sort((a, b) => userPriorityCache[b] - userPriorityCache[a])
+                .slice(0, maxCount);
+        }
+
+        // DPS历史数据管理 - 保持数据真实性
+        function updateDpsHistory(userArray) {
+            const currentTime = Date.now();
+            
+            for (const user of userArray) {
+                if (!dpsHistory[user.id]) {
+                    dpsHistory[user.id] = [];
+                }
+                
+                // 只记录真实的DPS数据，不进行人工平滑
+                dpsHistory[user.id].push({
+                    time: currentTime,
+                    dps: user.realtime_dps,
+                    isActive: user.realtime_dps > 0 // 标记是否在活跃输出
+                });
+                
+                // 保持最多60秒的数据
+                const cutoffTime = currentTime - 60000; // 60秒前
+                dpsHistory[user.id] = dpsHistory[user.id].filter(point => point.time > cutoffTime);
+            }
+        }
+        
+        // 初始化ECharts图表
+        function initChart() {
+            const chartDom = document.getElementById('dpsChart');
+            if (!chartDom || typeof echarts === 'undefined') {
+                console.warn('ECharts未加载或图表容器不存在');
+                return;
+            }
+            
+            chart = echarts.init(chartDom);
+            
+            const option = {
+                backgroundColor: 'transparent',
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '8%',
+                    top: '15%',
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(50, 50, 50, 0.9)',
+                    borderColor: '#777',
+                    borderWidth: 1,
+                    textStyle: {
+                        color: '#fff',
+                        fontSize: 12
+                    },
+                    axisPointer: {
+                        type: 'cross',
+                        crossStyle: {
+                            color: '#999'
+                        }
+                    },
+                    formatter: function(params) {
+                        if (params.length === 0) return '';
+                        let result = `<div style="font-weight: bold; margin-bottom: 4px;">时间: ${params[0].name}</div>`;
+                        params.forEach(param => {
+                            if (param.value !== null && param.value !== undefined) {
+                                result += `<div style="margin: 2px 0;">
+                                    <span style="display: inline-block; width: 10px; height: 10px; background: ${param.color}; border-radius: 50%; margin-right: 6px;"></span>
+                                    ${param.seriesName}: <span style="font-weight: bold;">${param.value}</span>
+                                </div>`;
+                            }
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    type: 'scroll',
+                    orient: 'horizontal',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 12,
+                        color: '#666'
+                    },
+                    pageButtonItemGap: 10,
+                    pageButtonPosition: 'end',
+                    pageFormatter: '{current}/{total}',
+                    pageIconColor: '#666',
+                    pageIconInactiveColor: '#ccc',
+                    pageTextStyle: {
+                        color: '#666',
+                        fontSize: 12
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ddd'
+                        }
+                    },
+                    axisTick: {
+                        lineStyle: {
+                            color: '#ddd'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#666',
+                        fontSize: 11,
+                        formatter: function(value, index) {
+                            return index % 100 === 0 ? `${60 - Math.floor(index / 10)}s` : '';
+                        }
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            color: '#f0f0f0',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'DPS',
+                    nameTextStyle: {
+                        color: '#666',
+                        fontSize: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ddd'
+                        }
+                    },
+                    axisTick: {
+                        lineStyle: {
+                            color: '#ddd'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#666',
+                        fontSize: 11,
+                        formatter: function(value) {
+                            if (value >= 1000) {
+                                return (value / 1000).toFixed(1) + 'K';
+                            }
+                            return value;
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#f0f0f0',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: []
+            };
+            
+            chart.setOption(option);
+            
+            // 响应窗口大小变化
+            window.addEventListener('resize', () => {
+                if (chart) chart.resize();
+            });
+        }
+        
+        // 更新图表 - 增量更新避免闪烁
+        function updateChart(userArray) {
+            if (!chart) return;
+            
+            const currentTime = Date.now();
+            
+            // 动态更新频率控制
+            const updateInterval = performanceMode ? 
+                CHART_CONFIG.UPDATE_INTERVAL_PERFORMANCE : 
+                CHART_CONFIG.UPDATE_INTERVAL_NORMAL;
+                
+            if (currentTime - lastChartUpdateTime < updateInterval) return;
+            lastChartUpdateTime = currentTime;
+            
+            // 美观的20色配色方案
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#FF9F43', '#54A0FF', '#5F27CD', '#00D2D3',
+                '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#FD79A8',
+                '#FDCB6E', '#E84393', '#A29BFE', '#00B894', '#00CEC9'
+            ];
+            
+            // 获取优先显示的用户
+            const priorityUsers = getTopPriorityUsers(userArray, CHART_CONFIG.MAX_VISIBLE_USERS);
+            performanceMode = priorityUsers.length > CHART_CONFIG.PERFORMANCE_MODE_THRESHOLD;
+            
+            // 性能模式下的数据长度
+            const dataLength = performanceMode ? CHART_CONFIG.DATA_POINT_LIMIT : MAX_HISTORY_LENGTH;
+            
+            // 获取当前图表配置
+            const currentOption = chart.getOption();
+            const currentSeries = currentOption.series || [];
+            
+            // 生成时间轴数据 (只在初次或数据长度变化时更新)
+            if (!chartInitialized || currentOption.xAxis[0].data.length !== dataLength) {
+                const xAxisData = [];
+                for (let i = 0; i < dataLength; i++) {
+                    xAxisData.push('');
+                }
+                
+                chart.setOption({
+                    xAxis: {
+                        data: xAxisData
+                    }
+                }, false, true); // 不合并，静默更新
+                
+                chartInitialized = true;
+            }
+            
+            // 增量更新series - 关键优化
+            const updatedSeries = [];
+            const existingSeriesMap = {};
+            
+            // 建立现有series映射
+            currentSeries.forEach((series, index) => {
+                existingSeriesMap[series.name] = { index, series };
+            });
+            
+            // 处理每个优先用户
+            priorityUsers.forEach((userId, index) => {
+                const history = dpsHistory[userId];
+                const nickname = userNicknames[userId] || `UID:${userId}`;
+                const color = colors[index % colors.length];
+                
+                // 构建数据数组
+                const data = new Array(dataLength).fill(null);
+                
+                // 填充真实数据点
+                const timeStep = performanceMode ? 200 : 100;
+                history.forEach(point => {
+                    const timeAgo = currentTime - point.time;
+                    const dataIndex = dataLength - 1 - Math.floor(timeAgo / timeStep);
+                    if (dataIndex >= 0 && dataIndex < dataLength) {
+                        data[dataIndex] = point.dps;
+                    }
+                });
+                
+                // 线条样式
+                const lineWidths = [3, 2.5, 2.2, 1.8, 1.5];
+                const widthIndex = Math.floor(index / 4) % lineWidths.length;
+                const lineWidth = performanceMode ? Math.max(1.5, lineWidths[widthIndex] - 0.5) : lineWidths[widthIndex];
+                
+                // 检查是否存在同名series
+                if (existingSeriesMap[nickname]) {
+                    // 更新现有series数据 - 避免重建
+                    const existingSeries = existingSeriesMap[nickname].series;
+                    updatedSeries.push({
+                        ...existingSeries,
+                        data: data,
+                        lineStyle: {
+                            ...existingSeries.lineStyle,
+                            color: color,
+                            width: lineWidth
+                        },
+                        itemStyle: {
+                            color: color
+                        }
+                    });
+                } else {
+                    // 创建新series
+                    updatedSeries.push({
+                        name: nickname,
+                        type: 'line',
+                        data: data,
+                        lineStyle: {
+                            color: color,
+                            width: lineWidth,
+                            cap: 'round',
+                            join: 'round'
+                        },
+                        itemStyle: {
+                            color: color
+                        },
+                        symbol: 'none',
+                        smooth: 0.15, // 减少平滑度避免过度计算
+                        connectNulls: false,
+                        sampling: 'lttb',
+                        animation: false, // 完全禁用动画
+                        silent: false, // 保持交互性
+                        emphasis: {
+                            focus: 'series',
+                            lineStyle: {
+                                width: lineWidth + 0.5
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // 使用增量更新，避免完全重绘
+            chart.setOption({
+                series: updatedSeries,
+                // 同时更新主题相关样式（避免深色模式切换时的闪烁）
+                legend: {
+                    textStyle: {
+                        color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#666'
+                    }
+                }
+            }, false, true); // notMerge=false, lazyUpdate=true
+            
+            // 更新状态显示
+            updateChartStatus(priorityUsers.length, Object.keys(dpsHistory).length);
+        }
+        
+        // 更新图表状态显示
+        function updateChartStatus(visibleCount, totalCount) {
+            const statusElement = document.getElementById('chartStatus');
+            if (!statusElement) return;
+            
+            statusElement.textContent = `显示 ${visibleCount}/${totalCount} 用户`;
+            statusElement.style.color = '#666';
+        }
+        
+        // 更新用户控制列表
+        function updateUserControlsList(userArray) {
+            const controlsList = document.getElementById('userControlsList');
+            if (!controlsList) return;
+            
+            const existingControls = new Set(Array.from(controlsList.children).map(el => el.dataset.userId));
+            
+            for (const user of userArray) {
+                if (existingControls.has(String(user.id))) continue;
+                
+                const nickname = userNicknames[user.id] || `UID:${user.id}`;
+                const isVisible = visibleUsers[user.id] !== false;
+                
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'user-controls';
+                controlDiv.dataset.userId = user.id;
+                controlDiv.innerHTML = `
+                    <input type="checkbox" class="visibility-checkbox" ${isVisible ? 'checked' : ''} onchange="toggleUserVisibility(${user.id}, this.checked)">
+                    <input type="text" class="user-nickname-input" value="${userNicknames[user.id] || ''}" placeholder="昵称" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
+                    <span class="user-uid">(UID:${user.id})</span>
+                `;
+                
+                controlsList.appendChild(controlDiv);
+            }
+        }
+        
+        // 更新昵称
+        function updateNickname(userId, nickname) {
+            if (nickname.trim()) {
+                userNicknames[userId] = nickname.trim();
+            } else {
+                delete userNicknames[userId];
+            }
+            localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+        }
+        
+        // 切换用户可见性
+        function toggleUserVisibility(userId, isVisible) {
+            if (isVisible) {
+                delete visibleUsers[userId];
+            } else {
+                visibleUsers[userId] = false;
+            }
+            localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
+        }
+        
+        // 切换图表面板显示
+        function toggleChartPanel() {
+            const panel = document.getElementById('chartControlPanel');
+            if (!panel) return;
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+        
+        // 全选/取消全选
+        function toggleAllUsers() {
+            const checkboxes = document.querySelectorAll('.visibility-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                const userId = cb.parentElement.dataset.userId;
+                if (!allChecked) {
+                    delete visibleUsers[userId];
+                } else {
+                    visibleUsers[userId] = false;
+                }
+            });
+            
+            localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
+        }
+        
+        // 清空所有昵称
+        function clearNicknames() {
+            if (confirm('确定要清空所有自定义昵称吗？')) {
+                userNicknames = {};
+                localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+                
+                // 清空控制面板中的所有昵称输入框
+                document.querySelectorAll('.user-nickname-input').forEach(input => {
+                    input.value = '';
+                });
+            }
+        }
+
         // 初始化
         connectWebSocket();
         initTheme();
         initSortMode();
+        initChart();
         
         // 页面卸载时清理连接
         window.addEventListener('beforeunload', () => {

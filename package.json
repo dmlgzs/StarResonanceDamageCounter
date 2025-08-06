@@ -12,6 +12,7 @@
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
     "cap": "^0.2.1",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "protobufjs": "^7.5.3",
     "socket.io": "^4.8.1",

@@ -3,6 +3,7 @@ const readline = require('readline');
 const winston = require("winston");
 const zlib = require('zlib');
 const express = require('express');
+const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const pb = require('./algo/pb');
@@ -188,6 +189,7 @@ async function main() {
     }, 50);
 
     //express
+    app.use(cors());
     app.use(express.static('public'));
 
     // 保留原先API，优先使用WebSocket
