@@ -587,13 +587,10 @@
             
             // 清空ECharts图表
             if (chart && typeof chart.setOption === 'function') {
+                // 温和地清空数据，保持基础配置不变
                 chart.setOption({
                     series: [],
                     legend: {
-                        data: [],
-                        selected: {}
-                    },
-                    xAxis: {
                         data: []
                     }
                 });
@@ -1034,6 +1031,7 @@
             chart.setOption({
                 series: updatedSeries,
                 legend: {
+                    data: updatedSeries.map(s => s.name), // 重新设置图例数据
                     selected: legendSelected,
                     textStyle: {
                         color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#666'
