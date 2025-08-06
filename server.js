@@ -86,35 +86,30 @@ class StatisticData {
         const now = Date.now();
 
         // 更新数值统计
-        if (isCrit) {
-            if (isLucky) {
-                this.stats.crit_lucky += value;
-            } else {
-                this.stats.critical += value;
-            }
+        this.stats.total += value;
+        if (isCrit && isLucky) {
+            this.stats.crit_lucky += value;
+        } else if (isCrit) {
+            this.stats.critical += value;
         } else if (isLucky) {
             this.stats.lucky += value;
         } else {
             this.stats.normal += value;
         }
-        this.stats.total += value;
         this.stats.hpLessen += hpLessenValue;
 
         // 更新次数统计
+        this.count.total++;
         if (isCrit && isLucky) {
             this.count.crit_lucky++;
-        }
-        if (isCrit) {
+        } else if (isCrit) {
             this.count.critical++;
-        }
-        if (isLucky) {
+        } else if (isLucky) {
             this.count.lucky++;
-        }
-        if (!isCrit && !isLucky) {
+        } else {
             this.count.normal++;
         }
-        this.count.total++;
-
+        
         this.realtimeWindow.push({
             time: now,
             value,
