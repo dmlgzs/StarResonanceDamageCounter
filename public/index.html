@@ -293,7 +293,6 @@
 
 <body>
     <h1>🎯 星痕共鸣实时战斗数据展示 V2.2</h1>
-    <h3>⚠ 暂未区分治疗量与伤害量，将合并计算，数据仅供参考</h3>
     <div style="margin: 20px 0;">
         <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
         <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
@@ -714,22 +713,23 @@
                     userArray.sort((a, b) => b.realtime_dps_max - a.realtime_dps_max);
                     break;
                 case 'takenDamage':
-                    userArray.sort((a, b) => (b.taken_damage || 0) - (a.taken_damage || 0));
+                    userArray.sort((a, b) => b.taken_damage - a.taken_damage);
                     break;
                 case 'healing':
-                    userArray.sort((a, b) => (b.total_healing?.total || 0) - (a.total_healing?.total || 0));
+                    userArray.sort((a, b) => b.total_healing.total - a.total_healing.total);
                     break;
                 case 'hps':
-                    userArray.sort((a, b) => (b.total_hps || 0) - (a.total_hps || 0));
+                    userArray.sort((a, b) => b.total_hps - a.total_hps);
                     break;
                 case 'realtimeHpsMax':
-                    userArray.sort((a, b) => (b.realtime_hps_max || 0) - (a.realtime_hps_max || 0));
+                    userArray.sort((a, b) => b.realtime_hps_max - a.realtime_hps_max);
                     break;
                 default:
                     userArray.sort((a, b) => a.id - b.id);
                     break;
             }
         }
+
 
         function updateSortMode() {
             const select = document.getElementById('sortSelect');

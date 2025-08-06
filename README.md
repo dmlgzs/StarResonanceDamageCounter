@@ -1,7 +1,7 @@
 # 星痕共鸣实时战斗数据统计工具 (Star Resonance Damage Counter)
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-10.13.1-orange.svg)](https://pnpm.io/)
 
 一个用于《星痕共鸣》游戏的实时战斗数据统计工具，通过网络抓包技术实时分析战斗数据，提供伤害统计、DPS 计算等功能。
@@ -113,23 +113,36 @@
   "code": 0,
   "user": {
     "114514": {
-      "realtime_dps": 1250,
-      "realtime_dps_max": 2100,
-      "total_dps": 850.25,
+      "realtime_dps": 0,
+      "realtime_dps_max": 3342,
+      "total_dps": 451.970764813365,
       "total_damage": {
-        "normal": 75000,
-        "critical": 25000,
-        "lucky": 25000,
-        "crit_lucky": 10000,
-        "hpLessen": 75000,
-        "total": 135000
+        "normal": 9411,
+        "critical": 246,
+        "lucky": 732,
+        "crit_lucky": 0,
+        "hpLessen": 8956,
+        "total": 10389
       },
       "total_count": {
-        "normal": 45,
-        "critical": 30,
-        "lucky": 15,
-        "total": 90
-      }
+        "normal": 76,
+        "critical": 5,
+        "lucky": 1,
+        "total": 82
+      },
+      "realtime_hps": 4017,
+      "realtime_hps_max": 11810,
+      "total_hps": 4497.79970662755,
+      "total_healing": {
+        "normal": 115924,
+        "critical": 18992,
+        "lucky": 0,
+        "crit_lucky": 0,
+        "hpLessen": 0,
+        "total": 134916
+      },
+      "taken_damage": 65,
+      "profession": "愈合"
     }
   }
 }
