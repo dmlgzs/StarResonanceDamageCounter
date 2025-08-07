@@ -1,6 +1,6 @@
 {
   "name": "star-resonance-damage-counter",
-  "version": "2.2.0",
+  "version": "2.2.2",
   "description": "Damage Counter for Star Resonance",
   "main": "server.js",
   "scripts": {
@@ -15,8 +15,12 @@
     "cap": "^0.2.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "long": "^5.3.2",
     "protobufjs": "^7.5.3",
     "socket.io": "^4.8.1",
     "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "protobufjs-cli": "^1.1.3"
   }
 }

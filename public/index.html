@@ -10,7 +10,6 @@
         body {
             font-family: "Segoe UI", sans-serif;
             background-color: #f8f9fa;
-            background-image: url('./background.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -108,7 +107,6 @@
         /* 夜间模式样式 */
         .dark-mode {
             background-color: #1a1a1a !important;
-            background-image: url('./background.png') !important;
             background-size: cover !important;
             background-position: center !important;
             background-repeat: no-repeat !important;
@@ -240,20 +238,200 @@
             color: #aaa;
         }
 
-        .controls-panel {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
         }
 
-        .dark-mode .controls-panel {
-            background: #2d2d2d !important;
-            color: #e0e0e0 !important;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-header {
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: white;
+        }
+
+        .close-button {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #f0f0f0;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* 夜间模式下的弹窗样式 */
+        .dark-mode .modal-content {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .modal-header {
+            background-color: #1976d2;
+        }
+
+        /* 移动设备响应式设计 */
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 2% auto;
+                width: 95%;
+                max-height: 90vh;
+            }
+            
+            .modal-header {
+                padding: 15px;
+            }
+            
+            .modal-body {
+                padding: 15px;
+            }
+            
+            #userControlsList {
+                max-height: 300px;
+                gap: 8px;
+            }
+            
+            .user-controls {
+                flex-direction: column;
+                gap: 5px;
+                padding: 8px;
+            }
+            
+            .user-nickname-input {
+                width: 80px;
+            }
+        }
+
+        /* 弹窗动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 服务器状态提示样式 */
+        .server-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10001;
+            transition: all 0.3s ease;
+            transform: translateX(100%);
+            opacity: 0;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .server-status.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .server-status.connected {
+            background-color: #4CAF50;
+            color: white;
+            border-left: 4px solid #45a049;
+        }
+
+        .server-status.disconnected {
+            background-color: #f44336;
+            color: white;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .server-status.reconnecting {
+            background-color: #ff9800;
+            color: white;
+            border-left: 4px solid #f57c00;
+        }
+
+        .server-status.api-mode {
+            background-color: #2196F3;
+            color: white;
+            border-left: 4px solid #1976D2;
+        }
+
+        /* 夜间模式下的服务器状态提示 */
+        .dark-mode .server-status {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .server-status.connected {
+            background-color: #388E3C;
+            border-left-color: #2E7D32;
+        }
+
+        .dark-mode .server-status.disconnected {
+            background-color: #D32F2F;
+            border-left-color: #C62828;
+        }
+
+        .dark-mode .server-status.reconnecting {
+            background-color: #F57C00;
+            border-left-color: #EF6C00;
+        }
+
+        .dark-mode .server-status.api-mode {
+            background-color: #1976D2;
+            border-left-color: #1565C0;
+        }
+
+        /* 移动设备响应式 */
+        @media (max-width: 768px) {
+            .server-status {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 13px;
+                padding: 10px 15px;
+            }
         }
 
         /* 简洁模式样式 */
@@ -275,7 +453,7 @@
 </head>
 
 <body>
-    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2</h1>
+    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2.2</h1>
     <div style="margin: 20px 0;">
         <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
         <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
@@ -293,16 +471,30 @@
     <button id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
     <button onclick="toggleDarkMode()">🌙 夜间模式</button>
     <button onclick="toggleSimpleMode()">📋 简洁模式</button>
+    <button onclick="toggleControlsModal()">⚙️ 用户设置</button>
 
-    <!-- 控制面板 -->
-    <div class="controls-panel">
-        <div style="margin-bottom: 15px;">
-            <button onclick="toggleAllUsers()">🔄 全选/取消全选</button>
-            <button onclick="clearNicknames()">🗑️ 清空所有昵称</button>
+    <!-- 控制面板弹窗 -->
+    <div id="controlsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>⚙️ 用户控制面板</span>
+                <span class="close-button" onclick="toggleControlsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px; text-align: center;">
+                    <button onclick="toggleAllUsers()">🔄 全选/取消全选</button>
+                    <button onclick="clearNicknames()">🗑️ 清空所有昵称</button>
+                </div>
+                <div id="userControlsList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-height: 400px; overflow-y: auto;">
+                    <!-- 用户控制项将在这里动态生成 -->
+                </div>
+            </div>
         </div>
-        <div id="userControlsList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-            <!-- 用户控制项将在这里动态生成 -->
-        </div>
+    </div>
+
+    <!-- 服务器状态提示 -->
+    <div id="serverStatus" class="server-status">
+        <span id="serverStatusText">连接中...</span>
     </div>
 
     <!-- DPS折线图 -->
@@ -388,6 +580,9 @@
         // 暂停统计相关变量
         let isPaused = false;
         
+        // 服务器状态提示相关变量
+        let serverStatusTimeout = null;
+        
         // 多用户性能优化配置
         const CHART_CONFIG = {
             MAX_VISIBLE_USERS: 20, // 最多同时显示的用户数
@@ -428,6 +623,42 @@
             
             return userColorMap[userIdStr];
         }
+
+        // 服务器状态提示管理
+        function showServerStatus(status, message, autoHide = true) {
+            const statusElement = document.getElementById('serverStatus');
+            const textElement = document.getElementById('serverStatusText');
+            
+            if (!statusElement || !textElement) return;
+            
+            // 清除之前的自动隐藏定时器
+            if (serverStatusTimeout) {
+                clearTimeout(serverStatusTimeout);
+                serverStatusTimeout = null;
+            }
+            
+            // 更新状态样式
+            statusElement.className = 'server-status show ' + status;
+            textElement.textContent = message;
+            
+            // 自动隐藏（连接成功状态3秒后隐藏，其他状态不自动隐藏）
+            if (autoHide && status === 'connected') {
+                serverStatusTimeout = setTimeout(() => {
+                    hideServerStatus();
+                }, 3000);
+            }
+        }
+        
+        function hideServerStatus() {
+            const statusElement = document.getElementById('serverStatus');
+            if (statusElement) {
+                statusElement.classList.remove('show');
+            }
+            if (serverStatusTimeout) {
+                clearTimeout(serverStatusTimeout);
+                serverStatusTimeout = null;
+            }
+        }
         
         // 用户优先级计算 - 基于DPS和活跃度
         function calculateUserPriority(userId, userArray) {
@@ -467,6 +698,7 @@
         // WebSocket连接初始化
         function initWebSocket() {
             try {
+                showServerStatus('reconnecting', '🔄 正在连接服务器...', false);
                 socket = io();
                 
                 socket.on('connect', () => {
@@ -474,6 +706,7 @@
                     isWebSocketConnected = true;
                     lastWebSocketMessage = Date.now();
                     webSocketReconnectAttempts = 0;
+                    showServerStatus('connected', '✅ 服务器连接成功');
                     
                     // 如果之前启用了API备用，现在切换回WebSocket
                     if (fallbackToAPI) {
@@ -487,6 +720,7 @@
                     console.log('WebSocket连接断开');
                     isWebSocketConnected = false;
                     webSocketReconnectAttempts++;
+                    if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接断开', false);
                 });
                 
                 socket.on('data', (data) => {
@@ -500,10 +734,12 @@
                 socket.on('connect_error', (error) => {
                     console.error('WebSocket连接错误:', error);
                     isWebSocketConnected = false;
+                    if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接失败', false);
                 });
                 
             } catch (error) {
                 console.error('WebSocket初始化失败:', error);
+                showServerStatus('disconnected', '❌ WebSocket初始化失败', false);
                 startAPIFallback();
             }
         }
@@ -519,6 +755,7 @@
                 if (timeSinceLastMessage > 5000 && !fallbackToAPI) {
                     console.warn('WebSocket超过5秒无消息，切换到API轮询模式');
                     fallbackToAPI = true;
+                    showServerStatus('api-mode', '📡 切换到API轮询模式', false);
                     startAPIFallback();
                 }
             }, 5000); // 每5秒检查一次
@@ -529,6 +766,7 @@
             if (apiInterval) return; // 避免重复启动
             
             console.log('启动API轮询备用模式');
+            showServerStatus('api-mode', '📡 使用API轮询模式', false);
             apiInterval = setInterval(fetchDataAndUpdateTables, 100);
         }
         
@@ -640,10 +878,19 @@
             
             try {
                 const res = await fetch('/api/data');
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
                 const data = await res.json();
                 processDataUpdate(data);
+                
+                // API请求成功时，如果显示的是断线状态，更新为API模式
+                if (fallbackToAPI) {
+                    showServerStatus('api-mode', '📡 API轮询模式运行中', false);
+                }
             } catch (err) {
                 console.error('获取数据失败：', err);
+                showServerStatus('disconnected', '❌ 无法获取服务器数据', false);
             }
         }
 
@@ -699,12 +946,19 @@
             
             // 清空ECharts图表
             if (chart && typeof chart.setOption === 'function') {
+                // 温和地清空数据，保持基础配置不变
                 chart.setOption({
                     series: [],
-                    xAxis: {
+                    legend: {
                         data: []
                     }
                 });
+            }
+            
+            // 清空控制面板中的用户控制项
+            const userControlsList = document.getElementById('userControlsList');
+            if (userControlsList) {
+                userControlsList.innerHTML = '';
             }
             
             fetchDataAndUpdateTables();
@@ -1193,6 +1447,7 @@
             chart.setOption({
                 series: updatedSeries,
                 legend: {
+                    data: updatedSeries.map(s => s.name), // 重新设置图例数据
                     selected: legendSelected,
                     textStyle: {
                         color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#666'
@@ -1360,6 +1615,36 @@
             }
         }
 
+        // 切换控制面板弹窗显示/隐藏
+        function toggleControlsModal() {
+            const modal = document.getElementById('controlsModal');
+            const isVisible = modal.style.display === 'block';
+            
+            if (isVisible) {
+                modal.style.display = 'none';
+            } else {
+                modal.style.display = 'block';
+            }
+        }
+
+        // 点击弹窗外部区域关闭弹窗
+        window.onclick = function(event) {
+            const modal = document.getElementById('controlsModal');
+            if (event.target === modal) {
+                toggleControlsModal();
+            }
+        }
+
+        // 键盘ESC键关闭弹窗
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('controlsModal');
+                if (modal.style.display === 'block') {
+                    toggleControlsModal();
+                }
+            }
+        });
+
         // 初始化
         function initialize() {
             initTheme();
@@ -1367,6 +1652,9 @@
             initSortMode();
             initPauseState();
             initChart();
+            
+            // 显示初始连接状态
+            showServerStatus('reconnecting', '🔄 正在初始化连接...', false);
             
             // 初始化WebSocket连接
             initWebSocket();
