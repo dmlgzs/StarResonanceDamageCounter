@@ -3,12 +3,11 @@
  */
 "use strict";
 const pb = require("protobufjs");
-//const pb = require("./protobuf.min");
 
 class Proto {
     /**
-     * @param {Buffer} bytes 
-     * @param {import("../ref").Proto} decoded 
+     * @param {Buffer} bytes
+     * @param {import("../ref").Proto} decoded
      */
     constructor(bytes, decoded) {
         if (decoded)
@@ -33,9 +32,9 @@ class Proto {
 }
 
 /**
- * @param {pb.Writer} writer 
- * @param {number} tag 
- * @param {any} value 
+ * @param {pb.Writer} writer
+ * @param {number} tag
+ * @param {any} value
  */
 function _encode(writer, tag, value) {
     if (value === null || value === undefined)
@@ -80,7 +79,7 @@ function _encode(writer, tag, value) {
 }
 
 /**
- * @param {import("../ref").Proto} o 
+ * @param {import("../ref").Proto} o
  * @returns {Uint8Array}
  */
 function encode(o) {
@@ -100,7 +99,7 @@ function encode(o) {
 }
 
 /**
- * @param {pb.Long} long 
+ * @param {pb.Long} long
  */
 function long2int(long) {
     if (long.high === 0) {
@@ -112,7 +111,7 @@ function long2int(long) {
 }
 
 /**
- * @param {Buffer} buf 
+ * @param {Buffer} buf
  * @returns {import("../ref").Proto}
  */
 function decode(buf) {
