@@ -3,7 +3,14 @@
   "version": "2.2.1",
   "description": "Damage Counter for Star Resonance",
   "main": "server.js",
+  "bin": {
+    "star-resonance-damage-counter": "server.js"
+  },
+  "engines": {
+    "node": "^20.0.0"
+  },
   "scripts": {
+    "build": "pkg . -o dist/star-resonance-damage-counter.exe",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,6 +28,18 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@yao-pkg/pkg": "^6.6.0",
     "protobufjs-cli": "^1.1.3"
+  },
+  "pkg": {
+    "scripts": "server.js",
+    "assets": [
+      "views/**/*",
+      "public/**/*",
+      "node_modules/cap/**/*"
+    ],
+    "targets": [
+      "node20-win-x64"
+    ]
   }
 }
