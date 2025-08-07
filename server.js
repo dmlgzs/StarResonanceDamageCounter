@@ -12,6 +12,7 @@ const decoders = cap.decoders;
 const PROTOCOL = decoders.PROTOCOL;
 const print = console.log;
 const app = express();
+const appACT = express();
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -448,6 +449,28 @@ async function main() {
     });
     app.listen(8989, () => {
         logger.info('Web Server started at http://localhost:8989');
+    });
+
+    appACT.use(cors());
+    appACT.use(express.static('public', { index: 'indexACT.html' }));
+    appACT.get('/api/data', (req, res) => {
+        const userData = userDataManager.getAllUsersData();
+        const data = {
+            code: 0,
+            user: userData,
+        };
+        res.json(data);
+    });
+    appACT.get('/api/clear', (req, res) => {
+        userDataManager.clearAll();
+        logger.info('Statistics have been cleared!');
+        res.json({
+            code: 0,
+            msg: 'Statistics have been cleared!',
+        });
+    });
+    appACT.listen(8988, () => {
+        logger.info('Web Server started at http://localhost:8988');
     });
 
     logger.info('Welcome!');
