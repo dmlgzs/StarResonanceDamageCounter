@@ -297,9 +297,10 @@ class UserData {
         this.damageStats.reset();
         this.healingStats.reset();
         this.takenDamage = 0;
-        this.profession = '未知';
-        this.skillUsage.clear();
-        this.fightPoint = 0;
+        //保留用户数据
+        //this.profession = '未知';
+        //this.skillUsage.clear();
+        //this.fightPoint = 0;
     }
 }
 
@@ -401,6 +402,13 @@ class UserDataManager {
         this.users.clear();
     }
 
+    /** 重置所有用户的统计数据，但保留用户列表 */
+    reset() {
+        for (const user of this.users.values()) {
+            user.reset();
+        }
+    }
+
     /** 获取用户列表 */
     getUserIds() {
         return Array.from(this.users.keys());
@@ -488,6 +496,14 @@ async function main() {
             user: userData,
         };
         res.json(data);
+    });
+    app.get('/api/reset', (req, res) => {
+        userDataManager.reset();
+        logger.info('Statistics have been reset!');
+        res.json({
+            code: 0,
+            msg: 'Statistics have been reset!',
+        });
     });
     app.get('/api/clear', (req, res) => {
         userDataManager.clearAll();

@@ -536,6 +536,7 @@
         </select>
     </div>
     <button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
+    <button class="main-button" onclick="resetData()">🔄 重置统计数据</button>
     <button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
     <button class="main-button" onclick="toggleDarkMode()">🌙 夜间模式</button>
     <button class="main-button" onclick="toggleSimpleMode()">📋 简洁模式</button>
@@ -1049,6 +1050,29 @@
             currentSortMode = select.value;
             localStorage.setItem('sortMode', currentSortMode);
             fetchData();
+        }
+
+        async function resetData() {
+            const response = await fetch('/api/reset');
+            const result = await response.json();
+
+                        // 清空历史数据和图表缓存
+            dpsHistory = {};
+            chartDatasetMap = {};
+            userPriorityCache = {};
+            userColorMap = {}; // 清空颜色映射
+            performanceMode = false;
+            
+            // 清空ECharts图表
+            if (chart && typeof chart.setOption === 'function') {
+                // 温和地清空数据，保持基础配置不变
+                chart.setOption({
+                    series: [],
+                    legend: {
+                        data: []
+                    }
+                });
+            }
         }
 
         async function clearData() {
