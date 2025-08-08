@@ -136,12 +136,12 @@
             background-color: #383838 !important;
         }
 
-        .dark-mode button {
+        .dark-mode .main-button {
             background-color: #424242 !important;
             color: #e0e0e0 !important;
         }
 
-        .dark-mode button:hover {
+        .dark-mode .main-button:hover {
             background-color: #616161 !important;
         }
 
@@ -449,6 +449,74 @@
         .simple-mode .healing-simple-col {
             display: table-cell !important;
         }
+
+        /* 数据组折叠样式 */
+        .hide-damage .damage-cols,
+        .hide-damage .dps-col,
+        .hide-damage .dps-cols,
+        .hide-damage .damage-main-col,
+        .hide-damage .damage-simple-col,
+        .hide-damage .damage-detail-cols {
+            display: none !important;
+        }
+
+        .hide-healing .healing-cols,
+        .hide-healing .hps-col,
+        .hide-healing .hps-cols,
+        .hide-healing .healing-main-col,
+        .hide-healing .healing-simple-col,
+        .hide-healing .healing-detail-cols {
+            display: none !important;
+        }
+
+        /* 数据组切换按钮样式 */
+        .data-group-controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .data-group-button {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: 2px solid #3498db;
+            background-color: white;
+            color: #3498db;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .data-group-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .data-group-button:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            color: white;
+        }
+
+        .dark-mode .data-group-button {
+            background-color: #2d2d2d;
+            color: #3498db;
+            border-color: #3498db;
+        }
+
+        .dark-mode .data-group-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .dark-mode .data-group-button:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            color: white;
+        }
     </style>
 </head>
 
@@ -467,11 +535,11 @@
             <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
         </select>
     </div>
-    <button onclick="clearData()">✨ 清空统计数据</button>
-    <button id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
-    <button onclick="toggleDarkMode()">🌙 夜间模式</button>
-    <button onclick="toggleSimpleMode()">📋 简洁模式</button>
-    <button onclick="toggleControlsModal()">⚙️ 用户设置</button>
+    <button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
+    <button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
+    <button class="main-button" onclick="toggleDarkMode()">🌙 夜间模式</button>
+    <button class="main-button" onclick="toggleSimpleMode()">📋 简洁模式</button>
+    <button class="main-button" onclick="toggleControlsModal()">⚙️ 用户设置</button>
 
     <!-- 控制面板弹窗 -->
     <div id="controlsModal" class="modal">
@@ -507,6 +575,18 @@
     </div>
 
     <div class="card">
+        <!-- 数据组显示控制 -->
+        <div class="data-group-controls">
+            <button id="damageGroupBtn" class="data-group-button active" onclick="toggleDataGroup('damage')">
+                ⚔️ 伤害&DPS
+            </button>
+            <button id="healingGroupBtn" class="data-group-button" onclick="toggleDataGroup('healing')">
+                ❤️ 治疗&HPS
+            </button>
+            <button id="allGroupBtn" class="data-group-button" onclick="toggleDataGroup('all')">
+                📊 全部数据
+            </button>
+        </div>
         <table id="damageTable">
             <thead>
                 <tr>
@@ -518,26 +598,26 @@
                     <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
                     <th class="damage-main-col" colspan="4">伤害</th>
                     <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
-                    <th colspan="3">DPS</th>
+                    <th class="dps-col" colspan="3">DPS</th>
                     <th class="healing-main-col" colspan="4">治疗</th>
                     <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
-                    <th colspan="3">HPS</th>
+                    <th class="hps-col" colspan="3">HPS</th>
                 </tr>
                 <tr>
-                    <th title="角色在战斗中造成的总伤害">总伤害</th>
+                    <th class="damage-cols" title="角色在战斗中造成的总伤害">总伤害</th>
                     <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
                     <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
                     <th class="damage-detail-cols" title="角色在战斗中造成的暴击的幸运伤害">暴击幸运</th>
-                    <th title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
-                    <th title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
-                    <th title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
-                    <th title="角色在战斗中造成的总治疗量">总治疗</th>
+                    <th class="dps-cols" title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
+                    <th class="dps-cols" title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
+                    <th class="dps-cols" title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
+                    <th class="healing-cols" title="角色在战斗中造成的总治疗量">总治疗</th>
                     <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
                     <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
                     <th class="healing-detail-cols" title="角色在战斗中造成的暴击的幸运治疗量">暴击幸运</th>
-                    <th title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时HPS</th>
-                    <th title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
-                    <th title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
+                    <th class="hps-cols" title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时HPS</th>
+                    <th class="hps-cols" title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
+                    <th class="hps-cols" title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -584,6 +664,10 @@
         
         // 服务器状态提示相关变量
         let serverStatusTimeout = null;
+        
+        // 数据组显示控制相关变量
+        let currentDataGroup = 'damage';
+        let lastVisiableUserArray = [];
         
         // 多用户性能优化配置
         const CHART_CONFIG = {
@@ -769,7 +853,7 @@
             
             console.log('启动API轮询备用模式');
             showServerStatus('api-mode', '📡 使用API轮询模式', false);
-            apiInterval = setInterval(fetchDataAndUpdateTables, 100);
+            apiInterval = setInterval(fetchData, 100);
         }
         
         // 停止API备用模式
@@ -789,9 +873,6 @@
         // 处理数据更新（WebSocket和API通用）
         function processDataUpdate(data, updateHistory = true) {
             try {
-                const damageTable = document.getElementById('damageTable').querySelector('tbody');
-                damageTable.innerHTML = '';
-                
                 // 将数据转换为数组以便排序
                 const userArray = Object.keys(data.user).map(id => ({
                     id: Number(id),
@@ -814,71 +895,8 @@
                 
                 // 过滤不可见的用户
                 const visibleUserArray = userArray.filter(user => visibleUsers[user.id] !== false);
-                
-                // 生成表格行
-                for (const user of visibleUserArray) {
-                    const crit_rate = user.total_count.critical / user.total_count.total;
-                    const lucky_rate = user.total_count.lucky / user.total_count.total;
-                    
-                    const row = document.createElement('tr');
-                    
-                    // 角色ID列
-                    const uidCell = document.createElement('td');
-                    uidCell.textContent = `UID:${user.id}`;
-                    row.appendChild(uidCell);
-                    
-                    // 角色昵称列
-                    const nicknameCell = document.createElement('td');
-                    // Check if user.name is a non-empty string
-                    const hasValidName = user.name && user.name.trim() !== '';
-                    const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
-                    
-                    // Debug: Log user data for the first few users
-                    if (Object.keys(data.user).length <= 3) {
-                        console.log(`User ${user.id}: name="${user.name}", hasValidName=${hasValidName}, nickname="${nickname}"`);
-                    }
-                    
-                    nicknameCell.textContent = nickname;
-                    row.appendChild(nicknameCell);
-                    
-                    const isSimpleMode = document.body.classList.contains('simple-mode');
-                    
-                    // 其他数据列
-                    const otherCells = [
-                        user.profession || '未知',
-                        user.taken_damage,
-                        `${(crit_rate * 100).toFixed(2)}%`,
-                        `${(lucky_rate * 100).toFixed(2)}%`,
-                        user.total_damage.total,
-                        // 简洁模式下跳过伤害详细列
-                        ...(isSimpleMode ? [] : [
-                            user.total_damage.critical,
-                            user.total_damage.lucky,
-                            user.total_damage.crit_lucky
-                        ]),
-                        user.realtime_dps,
-                        user.realtime_dps_max,
-                        user.total_dps.toFixed(2),
-                        user.total_healing.total,
-                        // 简洁模式下跳过治疗详细列
-                        ...(isSimpleMode ? [] : [
-                            user.total_healing.critical,
-                            user.total_healing.lucky,
-                            user.total_healing.crit_lucky
-                        ]),
-                        user.realtime_hps,
-                        user.realtime_hps_max,
-                        user.total_hps.toFixed(2),
-                    ];
-                    
-                    otherCells.forEach(cellData => {
-                        const cell = document.createElement('td');
-                        cell.textContent = cellData;
-                        row.appendChild(cell);
-                    });
-                    
-                    damageTable.appendChild(row);
-                }
+                lastVisiableUserArray = visibleUserArray;
+                updateTables(visibleUserArray);
                 
                 // 检查是否需要启用性能模式
                 const activeUserCount = Object.keys(dpsHistory).length;
@@ -898,7 +916,81 @@
             }
         }
 
-        async function fetchDataAndUpdateTables() {
+        // 生成表格行
+        function updateTables(visibleUserArray) {
+            const damageTable = document.getElementById('damageTable').querySelector('tbody');
+            damageTable.innerHTML = '';
+            for (const user of visibleUserArray) {
+                const crit_rate = user.total_count.critical / user.total_count.total;
+                const lucky_rate = user.total_count.lucky / user.total_count.total;
+                
+                const row = document.createElement('tr');
+                
+                // 角色ID列
+                const uidCell = document.createElement('td');
+                uidCell.textContent = `${user.id}`;
+                row.appendChild(uidCell);
+                
+                // 角色昵称列
+                const nicknameCell = document.createElement('td');
+                // Check if user.name is a non-empty string
+                const hasValidName = user.name && user.name.trim() !== '';
+                const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
+                
+                nicknameCell.textContent = nickname;
+                row.appendChild(nicknameCell);
+                
+                const isSimpleMode = document.body.classList.contains('simple-mode');
+                
+                // 其他数据列
+                const otherCells = [
+                    user.profession || '未知',
+                    user.taken_damage,
+                    `${(crit_rate * 100).toFixed(2)}%`,
+                    `${(lucky_rate * 100).toFixed(2)}%`,
+                ];
+                if (currentDataGroup === 'damage' || currentDataGroup === 'all') {
+                    otherCells.push(user.total_damage.total);
+                    if (!isSimpleMode) {
+                        otherCells.push(
+                            user.total_damage.critical,
+                            user.total_damage.lucky,
+                            user.total_damage.crit_lucky,
+                        );
+                    }
+                    otherCells.push(
+                        user.realtime_dps,
+                        user.realtime_dps_max,
+                        user.total_dps.toFixed(2),
+                    );
+                }
+                if (currentDataGroup === 'healing' || currentDataGroup === 'all') {
+                    otherCells.push(user.total_healing.total);
+                    if (!isSimpleMode) {
+                        otherCells.push(
+                            user.total_healing.critical,
+                            user.total_healing.lucky,
+                            user.total_healing.crit_lucky,
+                        );
+                    }
+                    otherCells.push(
+                        user.realtime_hps,
+                        user.realtime_hps_max,
+                        user.total_hps.toFixed(2),
+                    );
+                }
+                
+                otherCells.forEach(cellData => {
+                    const cell = document.createElement('td');
+                    cell.textContent = cellData;
+                    row.appendChild(cell);
+                });
+                
+                damageTable.appendChild(row);
+            }
+        }
+
+        async function fetchData() {
             // 暂停时不获取数据
             if (isPaused) return;
             
@@ -956,7 +1048,7 @@
             const select = document.getElementById('sortSelect');
             currentSortMode = select.value;
             localStorage.setItem('sortMode', currentSortMode);
-            fetchDataAndUpdateTables();
+            fetchData();
         }
 
         async function clearData() {
@@ -1118,6 +1210,53 @@
             if (savedSortMode) {
                 currentSortMode = savedSortMode;
                 document.getElementById('sortSelect').value = savedSortMode;
+            }
+        }
+
+        // 初始化数据组显示模式
+        function initDataGroup() {
+            const savedDataGroup = localStorage.getItem('dataGroup') || 'damage';
+            currentDataGroup = savedDataGroup;
+            setDataGroup(savedDataGroup);
+        }
+
+        // 切换数据组显示
+        function toggleDataGroup(group) {
+            currentDataGroup = group;
+            setDataGroup(group);
+            localStorage.setItem('dataGroup', group);
+            if (isPaused) updateTables(lastVisiableUserArray);
+        }
+
+        // 设置数据组显示状态
+        function setDataGroup(group) {
+            const body = document.body;
+            const damageBtn = document.getElementById('damageGroupBtn');
+            const healingBtn = document.getElementById('healingGroupBtn');
+            const allBtn = document.getElementById('allGroupBtn');
+            
+            body.classList.remove('hide-damage', 'hide-healing');
+            [damageBtn, healingBtn, allBtn].forEach(btn => {
+                if (btn) btn.classList.remove('active');
+            });
+            
+            switch (group) {
+                case 'damage':
+                    body.classList.add('hide-healing');
+                    if (damageBtn) damageBtn.classList.add('active');
+                    break;
+                case 'healing':
+                    body.classList.add('hide-damage');
+                    if (healingBtn) healingBtn.classList.add('active');
+                    break;
+                case 'all':
+                    if (allBtn) allBtn.classList.add('active');
+                    break;
+                default:
+                    // 默认显示伤害&DPS
+                    body.classList.add('hide-healing');
+                    if (damageBtn) damageBtn.classList.add('active');
+                    break;
             }
         }
 
@@ -1667,7 +1806,7 @@
             }
             
             // 触发数据更新，重新渲染表格
-            fetchDataAndUpdateTables();
+            fetchData();
         }
         
         // 清空所有昵称
@@ -1718,6 +1857,7 @@
             initTheme();
             initSimpleMode();
             initSortMode();
+            initDataGroup();
             initPauseState();
             initChart();
             
@@ -1731,7 +1871,7 @@
             monitorWebSocketConnection();
             
             // 只在初始化时获取一次数据，后续通过WebSocket接收
-            fetchDataAndUpdateTables();
+            fetchData();
         }
         
         // 等待DOM加载完成后初始化

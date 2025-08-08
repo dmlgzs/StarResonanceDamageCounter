@@ -623,12 +623,31 @@ async function main() {
                                     } while (data1 && data1.length)
                                 }
                             }
+                            //尝试通过登录返回包识别服务器(仍需测试)
+                            if (buf.length === 0x62) {
+                                const signature = Buffer.from([
+                                    0x00, 0x00, 0x00, 0x62,
+                                    0x00, 0x03,
+                                    0x00, 0x00, 0x00, 0x01,
+                                    0x00, 0x11, 0x45, 0x14,//seq?
+                                    0x00, 0x00, 0x00, 0x00,
+                                    0x0a, 0x4e, 0x08, 0x01, 0x22, 0x24
+                                ]);
+                                if (Buffer.compare(buf.subarray(0, 10), signature.subarray(0, 10)) === 0 &&
+                                    Buffer.compare(buf.subarray(14, 14 + 6), signature.subarray(14, 14 + 6)) === 0) {
+                                    if (current_server !== src_server) {
+                                        current_server = src_server;
+                                        clearTcpCache();
+                                        logger.info('Got Scene Server Address by Login Return Packet: ' + src_server);
+                                    }
+                                }
+                            }
                         } catch (e) { }
                         return;
                     }
                     //这里已经是识别到的服务器的包了
                     await tcp_lock.acquire();
-                    if (tcp_next_seq === -1 && buf.length > 4 && buf.readUInt32BE() < 999999) { //第一次抓包可能抓到后半段的，先丢了
+                    if (tcp_next_seq === -1 && buf.length > 4 && buf.readUInt32BE() < 0x0fffff) { //第一次抓包可能抓到后半段的，先丢了
                         tcp_next_seq = ret.info.seqno;
                     }
                     // logger.debug('TCP next seq: ' + tcp_next_seq);
@@ -665,7 +684,7 @@ async function main() {
                             _data = _data.subarray(packetSize);
                             const processor = new PacketProcessor({ logger, userDataManager });
                             if (!isPaused) processor.processPacket(packet);
-                        } else if (packetSize > 999999) {
+                        } else if (packetSize > 0x0fffff) {
                             logger.error(`Invalid Length!! ${_data.length},${len},${_data.toString('hex')},${tcp_next_seq}`);
                             process.exit(1);
                             break;

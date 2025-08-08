@@ -292,18 +292,18 @@ class PacketProcessor {
                     case AttrType.AttrName:
                         const playerName = reader.string();
                         this.userDataManager.setName(playerUuid.toNumber(), playerName);
-                        this.logger.info(`Found player name ${playerName} for uuid ${playerUuid}`);
+                        this.logger.info(`Found player name ${playerName} for UID ${playerUuid}`);
                         break;
                     case AttrType.AttrProfessionId:
                         const professionId = reader.int32();
                         const professionName = getProfessionNameFromId(professionId);
                         this.userDataManager.setProfession(playerUuid.toNumber(), professionName);
-                        this.logger.debug(`Found profession ${professionName} for uuid ${playerUuid}`);
+                        this.logger.debug(`Found profession ${professionName} for UID ${playerUuid}`);
                         break;
                     case AttrType.AttrFightPoint:
                         const playerFightPoint = reader.int32();
                         this.userDataManager.setFightPoint(playerUuid.toNumber(), playerFightPoint);
-                        this.logger.debug(`Found player fight point ${playerFightPoint} for uuid ${playerUuid}`);
+                        this.logger.debug(`Found player fight point ${playerFightPoint} for UID ${playerUuid}`);
                         break;
                     default:
                         // this.logger.debug(`Found unknown attrId ${attr.Id}`);
