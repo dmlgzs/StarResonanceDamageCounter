@@ -510,7 +510,8 @@
         <table id="damageTable">
             <thead>
                 <tr>
-                    <th rowspan="2" title="角色唯一标识符/自定义昵称">角色昵称</th>
+                    <th rowspan="2" title="角色唯一标识符">角色ID</th>
+                    <th rowspan="2" title="角色昵称/自定义昵称">角色昵称</th>
                     <th rowspan="2" title="角色职业">职业</th>
                     <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
                     <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
@@ -568,6 +569,7 @@
         let chartInitialized = false; // 标记图表是否已初始化
         let userColorMap = {}; // 用户固定颜色映射
         let isUpdatingFromLegend = false; // 防止图例事件和控制面板事件相互触发
+        let currentUserArray = []; // 缓存当前用户数组用于查找用户名
         
         // WebSocket连接相关变量
         let socket = null;
@@ -779,6 +781,11 @@
             }
         }
         
+        // 获取用户数据的辅助函数
+        function getUserFromArray(userId) {
+            return currentUserArray.find(user => user.id.toString() === userId.toString());
+        }
+        
         // 处理数据更新（WebSocket和API通用）
         function processDataUpdate(data) {
             try {
@@ -790,6 +797,9 @@
                     id: Number(id),
                     ...data.user[id]
                 }));
+                
+                // 缓存当前用户数组
+                currentUserArray = userArray;
                 
                 // 更新DPS历史数据
                 updateDpsHistory(userArray);
@@ -810,11 +820,23 @@
                     
                     const row = document.createElement('tr');
                     
-                    // 昵称列
-                    const nicknameCell = document.createElement('td');
-                    const nickname = userNicknames[user.id] || `UID:${user.id}`;
-                    nicknameCell.textContent = nickname;
+                    // 角色ID列
+                    const uidCell = document.createElement('td');
+                    uidCell.textContent = `UID:${user.id}`;
+                    row.appendChild(uidCell);
                     
+                    // 角色昵称列
+                    const nicknameCell = document.createElement('td');
+                    // Check if user.name is a non-empty string
+                    const hasValidName = user.name && user.name.trim() !== '';
+                    const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
+                    
+                    // Debug: Log user data for the first few users
+                    if (Object.keys(data.user).length <= 3) {
+                        console.log(`User ${user.id}: name="${user.name}", hasValidName=${hasValidName}, nickname="${nickname}"`);
+                    }
+                    
+                    nicknameCell.textContent = nickname;
                     row.appendChild(nicknameCell);
                     
                     const isSimpleMode = document.body.classList.contains('simple-mode');
@@ -1335,7 +1357,9 @@
             // 处理每个优先用户
             priorityUsers.forEach((userId, index) => {
                 const history = dpsHistory[userId];
-                const nickname = userNicknames[userId] || `UID:${userId}`;
+                const user = getUserFromArray(userId);
+                const hasValidName = user?.name && user.name.trim() !== '';
+                const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
                 const color = getUserColor(userId); // 使用固定颜色分配
                 
                 // 构建数据数组
@@ -1487,15 +1511,17 @@
                     continue;
                 }
                 
-                const nickname = userNicknames[userIdStr] || `UID:${user.id}`;
+                const hasValidName = user.name && user.name.trim() !== '';
+                const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${user.id}`;
                 const isVisible = visibleUsers[userIdStr] !== false;
                 
                 const controlDiv = document.createElement('div');
                 controlDiv.className = 'user-controls';
                 controlDiv.dataset.userId = userIdStr;
+                const placeholderText = (hasValidName ? user.name : '昵称');
                 controlDiv.innerHTML = `
                     <input type="checkbox" class="visibility-checkbox" ${isVisible ? 'checked' : ''} onchange="toggleUserVisibility(${user.id}, this.checked)">
-                    <input type="text" class="user-nickname-input" value="${userNicknames[userIdStr] || ''}" placeholder="昵称" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
+                    <input type="text" class="user-nickname-input" value="${userNicknames[userIdStr] || ''}" placeholder="${placeholderText}" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
                     <span class="user-uid">(UID:${user.id})</span>
                 `;
                 
@@ -1531,7 +1557,9 @@
                 isUpdatingFromLegend = true;
                 
                 // 找到对应的series名称
-                const nickname = userNicknames[userIdStr] || `UID:${userId}`;
+                const user = getUserFromArray(userId);
+                const hasValidName = user?.name && user.name.trim() !== '';
+                const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${userId}`;
                 
                 // 通过ECharts API切换图例选中状态
                 chart.dispatchAction({
@@ -1571,7 +1599,9 @@
             if (chart) {
                 checkboxes.forEach(cb => {
                     const userId = cb.parentElement.dataset.userId;
-                    const nickname = userNicknames[userId] || `UID:${userId}`;
+                    const user = getUserFromArray(userId);
+                    const hasValidName = user?.name && user.name.trim() !== '';
+                    const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
                     
                     // 设置标志防止递归触发
                     isUpdatingFromLegend = true;
