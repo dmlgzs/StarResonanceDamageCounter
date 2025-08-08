@@ -787,7 +787,7 @@
         }
         
         // 处理数据更新（WebSocket和API通用）
-        function processDataUpdate(data) {
+        function processDataUpdate(data, updateHistory = true) {
             try {
                 const damageTable = document.getElementById('damageTable').querySelector('tbody');
                 damageTable.innerHTML = '';
@@ -802,7 +802,9 @@
                 currentUserArray = userArray;
                 
                 // 更新DPS历史数据
-                updateDpsHistory(userArray);
+                if (updateHistory) {
+                    updateDpsHistory(userArray);
+                }
                 
                 // 更新用户控制列表
                 updateUserControlsList(userArray);
@@ -888,7 +890,9 @@
                 }
                 
                 // 更新图表
-                updateChart(userArray);
+                if (updateHistory) {
+                    updateChart(userArray);
+                }
             } catch (err) {
                 console.error('处理数据更新失败：', err);
             }
@@ -964,17 +968,21 @@
             chartDatasetMap = {};
             userPriorityCache = {};
             userColorMap = {}; // 清空颜色映射
+            currentUserArray = []; // 清空当前用户数组缓存
+            lastUpdateTime = 0; // 重置图表更新时间
             performanceMode = false;
             
-            // 清空ECharts图表
-            if (chart && typeof chart.setOption === 'function') {
-                // 温和地清空数据，保持基础配置不变
-                chart.setOption({
-                    series: [],
-                    legend: {
-                        data: []
-                    }
-                });
+            // 清空ECharts图表 - 完全重新初始化
+            if (chart) {
+                // 销毁现有图表
+                chart.dispose();
+                chart = null;
+                
+                // 重置图表初始化状态
+                chartInitialized = false;
+                
+                // 重新初始化空图表
+                initChart();
             }
             
             // 清空控制面板中的用户控制项
@@ -983,7 +991,20 @@
                 userControlsList.innerHTML = '';
             }
             
-            fetchDataAndUpdateTables();
+            // 清空表格显示
+            const damageTable = document.getElementById('damageTable').querySelector('tbody');
+            damageTable.innerHTML = '';
+            
+            // 即使在暂停状态下也要获取数据以显示清空后的结果
+            // 临时保存暂停状态
+            const wasPaused = isPaused;
+            isPaused = false;
+            
+            // 获取并显示清空后的数据
+            await fetchDataAndUpdateTables();
+            
+            // 恢复暂停状态
+            isPaused = wasPaused;
         }
 
         function toggleDarkMode() {
@@ -1015,6 +1036,23 @@
                 body.classList.add('simple-mode');
                 button.textContent = '📄 详细模式';
                 localStorage.setItem('simpleMode', 'true');
+            }
+            
+            // 在暂停状态下，直接使用缓存的数据重新渲染表格，不更新DPS历史
+            if (isPaused && currentUserArray.length > 0) {
+                // 创建一个临时的数据对象，使用已缓存的用户数据
+                const tempData = {
+                    user: {}
+                };
+                currentUserArray.forEach(user => {
+                    tempData.user[user.id] = user;
+                });
+                
+                // 调用processDataUpdate但跳过DPS历史更新
+                processDataUpdate(tempData, false); // 传入false表示不更新DPS历史
+            } else if (!isPaused) {
+                // 非暂停状态下正常更新
+                fetchDataAndUpdateTables();
             }
         }
 
