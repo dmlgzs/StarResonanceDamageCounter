@@ -309,26 +309,26 @@
                 width: 95%;
                 max-height: 90vh;
             }
-            
+
             .modal-header {
                 padding: 15px;
             }
-            
+
             .modal-body {
                 padding: 15px;
             }
-            
+
             #userControlsList {
                 max-height: 300px;
                 gap: 8px;
             }
-            
+
             .user-controls {
                 flex-direction: column;
                 gap: 5px;
                 padding: 8px;
             }
-            
+
             .user-nickname-input {
                 width: 80px;
             }
@@ -341,11 +341,11 @@
         }
 
         @keyframes slideIn {
-            from { 
+            from {
                 transform: translateY(-50px);
                 opacity: 0;
             }
-            to { 
+            to {
                 transform: translateY(0);
                 opacity: 1;
             }
@@ -521,1328 +521,1366 @@
 </head>
 
 <body>
-    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2.2</h1>
-    <div style="margin: 20px 0;">
-        <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
-        <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
-            <option value="uid">按UID排序 (升序)</option>
-            <option value="takenDamage">按承伤排序 (降序)</option>
-            <option value="damage">按总伤害排序 (降序)</option>
-            <option value="dps">按总DPS排序 (降序)</option>
-            <option value="realtimeDpsMax">按最大瞬时DPS排序 (降序)</option>
-            <option value="healing">按总治疗排序 (降序)</option>
-            <option value="hps">按总HPS排序 (降序)</option>
-            <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
-        </select>
-    </div>
-    <button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
-    <button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
-    <button class="main-button" onclick="toggleDarkMode()">🌙 夜间模式</button>
-    <button class="main-button" onclick="toggleSimpleMode()">📋 简洁模式</button>
-    <button class="main-button" onclick="toggleControlsModal()">⚙️ 用户设置</button>
+<h1>🎯 星痕共鸣实时战斗数据展示 V2.2.2</h1>
+<div style="margin: 20px 0;">
+    <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
+    <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
+        <option value="uid">按UID排序 (升序)</option>
+        <option value="takenDamage">按承伤排序 (降序)</option>
+        <option value="damage">按总伤害排序 (降序)</option>
+        <option value="dps">按总DPS排序 (降序)</option>
+        <option value="realtimeDpsMax">按最大瞬时DPS排序 (降序)</option>
+        <option value="healing">按总治疗排序 (降序)</option>
+        <option value="hps">按总HPS排序 (降序)</option>
+        <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
+    </select>
+</div>
+<button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
+<button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
+<button class="main-button" onclick="toggleDarkMode()">🌙 夜间模式</button>
+<button class="main-button" onclick="toggleSimpleMode()">📋 简洁模式</button>
+<button class="main-button" onclick="toggleControlsModal()">⚙️ 用户设置</button>
 
-    <!-- 控制面板弹窗 -->
-    <div id="controlsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span>⚙️ 用户控制面板</span>
-                <span class="close-button" onclick="toggleControlsModal()">&times;</span>
+<!-- 控制面板弹窗 -->
+<div id="controlsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>⚙️ 用户控制面板</span>
+            <span class="close-button" onclick="toggleControlsModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 15px; text-align: center;">
+                <button onclick="toggleAllUsers()">🔄 全选/取消全选</button>
+                <button onclick="clearNicknames()">🗑️ 清空所有昵称</button>
             </div>
-            <div class="modal-body">
-                <div style="margin-bottom: 15px; text-align: center;">
-                    <button onclick="toggleAllUsers()">🔄 全选/取消全选</button>
-                    <button onclick="clearNicknames()">🗑️ 清空所有昵称</button>
-                </div>
-                <div id="userControlsList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-height: 400px; overflow-y: auto;">
-                    <!-- 用户控制项将在这里动态生成 -->
-                </div>
+            <div id="userControlsList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-height: 400px; overflow-y: auto;">
+                <!-- 用户控制项将在这里动态生成 -->
             </div>
         </div>
     </div>
+</div>
 
-    <!-- 服务器状态提示 -->
-    <div id="serverStatus" class="server-status">
-        <span id="serverStatusText">连接中...</span>
+<!-- 服务器状态提示 -->
+<div id="serverStatus" class="server-status">
+    <span id="serverStatusText">连接中...</span>
+</div>
+
+<!-- DPS折线图 -->
+<div class="chart-container">
+    <h3 style="margin-top: 0; display: flex; justify-content: space-between; align-items: center;">
+        📈 DPS趋势
+        <span id="chartStatus" style="font-size: 12px; color: #666; font-weight: normal;"></span>
+    </h3>
+    <div id="dpsChart" style="width: 100%; height: 350px;"></div>
+</div>
+
+<div class="card">
+    <!-- 数据组显示控制 -->
+    <div class="data-group-controls">
+        <button id="damageGroupBtn" class="data-group-button active" onclick="toggleDataGroup('damage')">
+            ⚔️ 伤害&DPS
+        </button>
+        <button id="healingGroupBtn" class="data-group-button" onclick="toggleDataGroup('healing')">
+            ❤️ 治疗&HPS
+        </button>
+        <button id="allGroupBtn" class="data-group-button" onclick="toggleDataGroup('all')">
+            📊 全部数据
+        </button>
     </div>
+    <table id="damageTable">
+        <thead>
+        <tr>
+            <th rowspan="2" title="角色唯一标识符">角色ID</th>
+            <th rowspan="2" title="角色昵称/自定义昵称">角色昵称</th>
+            <th rowspan="2" title="角色职业">职业</th>
+            <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
+            <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
+            <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
+            <th class="damage-main-col" colspan="4">伤害</th>
+            <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
+            <th class="dps-col" colspan="3">DPS</th>
+            <th class="healing-main-col" colspan="4">治疗</th>
+            <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
+            <th class="hps-col" colspan="3">HPS</th>
+        </tr>
+        <tr>
+            <th class="damage-cols" title="角色在战斗中造成的总伤害">总伤害</th>
+            <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
+            <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
+            <th class="damage-detail-cols" title="角色在战斗中造成的暴击的幸运伤害">暴击幸运</th>
+            <th class="dps-cols" title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
+            <th class="dps-cols" title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
+            <th class="dps-cols" title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
+            <th class="healing-cols" title="角色在战斗中造成的总治疗量">总治疗</th>
+            <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
+            <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
+            <th class="healing-detail-cols" title="角色在战斗中造成的暴击的幸运治疗量">暴击幸运</th>
+            <th class="hps-cols" title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时HPS</th>
+            <th class="hps-cols" title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
+            <th class="hps-cols" title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
 
-    <!-- DPS折线图 -->
-    <div class="chart-container">
-        <h3 style="margin-top: 0; display: flex; justify-content: space-between; align-items: center;">
-            📈 DPS趋势
-            <span id="chartStatus" style="font-size: 12px; color: #666; font-weight: normal;"></span>
-        </h3>
-        <div id="dpsChart" style="width: 100%; height: 350px;"></div>
-    </div>
+<div class="watermark"></div>
 
-    <div class="card">
-        <!-- 数据组显示控制 -->
-        <div class="data-group-controls">
-            <button id="damageGroupBtn" class="data-group-button active" onclick="toggleDataGroup('damage')">
-                ⚔️ 伤害&DPS
-            </button>
-            <button id="healingGroupBtn" class="data-group-button" onclick="toggleDataGroup('healing')">
-                ❤️ 治疗&HPS
-            </button>
-            <button id="allGroupBtn" class="data-group-button" onclick="toggleDataGroup('all')">
-                📊 全部数据
-            </button>
-        </div>
-        <table id="damageTable">
-            <thead>
-                <tr>
-                    <th rowspan="2" title="角色唯一标识符">角色ID</th>
-                    <th rowspan="2" title="角色昵称/自定义昵称">角色昵称</th>
-                    <th rowspan="2" title="角色职业">职业</th>
-                    <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
-                    <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
-                    <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
-                    <th class="damage-main-col" colspan="4">伤害</th>
-                    <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
-                    <th class="dps-col" colspan="3">DPS</th>
-                    <th class="healing-main-col" colspan="4">治疗</th>
-                    <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
-                    <th class="hps-col" colspan="3">HPS</th>
-                </tr>
-                <tr>
-                    <th class="damage-cols" title="角色在战斗中造成的总伤害">总伤害</th>
-                    <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
-                    <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
-                    <th class="damage-detail-cols" title="角色在战斗中造成的暴击的幸运伤害">暴击幸运</th>
-                    <th class="dps-cols" title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
-                    <th class="dps-cols" title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
-                    <th class="dps-cols" title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
-                    <th class="healing-cols" title="角色在战斗中造成的总治疗量">总治疗</th>
-                    <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
-                    <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
-                    <th class="healing-detail-cols" title="角色在战斗中造成的暴击的幸运治疗量">暴击幸运</th>
-                    <th class="hps-cols" title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时HPS</th>
-                    <th class="hps-cols" title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
-                    <th class="hps-cols" title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+<footer style="margin-top: 40px; font-size: 14px; color: #888;">
+    <span>© 2025 Made with ❤️ by </span>
+    <a href="https://github.com/dmlgzs/" target="_blank">Dimole</a>
+    <span> and </span>
+    <a href="https://github.com/dmlgzs/StarResonanceDamageCounter/graphs/contributors" target="_blank">Other Contributors</a>
+    <span> | </span>
+    <a href="https://github.com/dmlgzs/StarResonanceDamageCounter" target="_blank">GitHub</a>
+</footer>
 
-    <div class="watermark"></div>
+<script>
+    let currentSortMode = 'uid'; // 默认按UID排序
+    let userNicknames = JSON.parse(localStorage.getItem('userNicknames') || '{}');
+    let visibleUsers = JSON.parse(localStorage.getItem('visibleUsers') || '{}');
+    let dpsHistory = {}; // 存储每个用户的DPS历史数据
+    let chart = null;
+    const HISTORY_DURATION_SECONDS = 60; // 历史记录时长（秒）
+    const HISTORY_FREQUENCY_PER_SECOND = 10; // 每秒记录次数
+    const MAX_HISTORY_LENGTH = HISTORY_DURATION_SECONDS * HISTORY_FREQUENCY_PER_SECOND; // 60秒 * 10次/秒
+    let chartDatasetMap = {}; // 缓存数据集索引，避免重建
+    let lastUpdateTime = 0;
+    let chartInitialized = false; // 标记图表是否已初始化
+    let userColorMap = {}; // 用户固定颜色映射
+    let isUpdatingFromLegend = false; // 防止图例事件和控制面板事件相互触发
+    let currentUserArray = []; // 缓存当前用户数组用于查找用户名
 
-    <footer style="margin-top: 40px; font-size: 14px; color: #888;">
-        <span>© 2025 Made with ❤️ by </span>
-        <a href="https://github.com/dmlgzs/" target="_blank">Dimole</a>
-        <span> and </span>
-        <a href="https://github.com/dmlgzs/StarResonanceDamageCounter/graphs/contributors" target="_blank">Other Contributors</a>
-        <span> | </span>
-        <a href="https://github.com/dmlgzs/StarResonanceDamageCounter" target="_blank">GitHub</a>
-    </footer>
+    // WebSocket连接相关变量
+    let socket = null;
+    let isWebSocketConnected = false;
+    let lastWebSocketMessage = Date.now();
+    let webSocketReconnectAttempts = 0;
+    let fallbackToAPI = false;
+    let apiInterval = null;
 
-    <script>
-        let currentSortMode = 'uid'; // 默认按UID排序
-        let userNicknames = JSON.parse(localStorage.getItem('userNicknames') || '{}');
-        let visibleUsers = JSON.parse(localStorage.getItem('visibleUsers') || '{}');
-        let dpsHistory = {}; // 存储每个用户的DPS历史数据
-        let chart = null;
-        const HISTORY_DURATION_SECONDS = 60; // 历史记录时长（秒）
-        const HISTORY_FREQUENCY_PER_SECOND = 10; // 每秒记录次数
-        const MAX_HISTORY_LENGTH = HISTORY_DURATION_SECONDS * HISTORY_FREQUENCY_PER_SECOND; // 60秒 * 10次/秒
-        let chartDatasetMap = {}; // 缓存数据集索引，避免重建
-        let lastUpdateTime = 0;
-        let chartInitialized = false; // 标记图表是否已初始化
-        let userColorMap = {}; // 用户固定颜色映射
-        let isUpdatingFromLegend = false; // 防止图例事件和控制面板事件相互触发
-        let currentUserArray = []; // 缓存当前用户数组用于查找用户名
-        
-        // WebSocket连接相关变量
-        let socket = null;
-        let isWebSocketConnected = false;
-        let lastWebSocketMessage = Date.now();
-        let webSocketReconnectAttempts = 0;
-        let fallbackToAPI = false;
-        let apiInterval = null;
-        
-        // 暂停统计相关变量
-        let isPaused = false;
-        
-        // 服务器状态提示相关变量
-        let serverStatusTimeout = null;
-        
-        // 数据组显示控制相关变量
-        let currentDataGroup = 'damage';
-        let lastVisiableUserArray = [];
-        
-        // 多用户性能优化配置
-        const CHART_CONFIG = {
-            MAX_VISIBLE_USERS: 20, // 最多同时显示的用户数
-            PERFORMANCE_MODE_THRESHOLD: 15, // 超过此数量启用性能模式
-            UPDATE_INTERVAL_NORMAL: 33, // 正常模式更新间隔(30fps)
-            UPDATE_INTERVAL_PERFORMANCE: 100, // 性能模式更新间隔(10fps)
-            DATA_POINT_LIMIT: 300 // 性能模式下的数据点限制(30秒)
-        };
-        
-        let performanceMode = false;
-        let userPriorityCache = {}; // 用户优先级缓存
-        
-        // 美观的20色配色方案
-        const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-            '#DDA0DD', '#FF9F43', '#54A0FF', '#5F27CD', '#00D2D3',
-            '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#FD79A8',
-            '#FDCB6E', '#E84393', '#A29BFE', '#00B894', '#00CEC9'
-        ];
-        
-        // 为用户分配固定颜色
-        function getUserColor(userId) {
-            const userIdStr = String(userId);
-            
-            if (!userColorMap[userIdStr]) {
-                // 基于用户ID的哈希值分配颜色，确保同一个用户总是得到相同的颜色
-                let hash = 0;
-                for (let i = 0; i < userIdStr.length; i++) {
-                    const char = userIdStr.charCodeAt(i);
-                    hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash; // 转换为32位整数
+    // 暂停统计相关变量
+    let isPaused = false;
+
+    // 服务器状态提示相关变量
+    let serverStatusTimeout = null;
+
+    // 数据组显示控制相关变量
+    let currentDataGroup = 'damage';
+    let lastVisiableUserArray = [];
+
+    // 多用户性能优化配置
+    const CHART_CONFIG = {
+        MAX_VISIBLE_USERS: 20, // 最多同时显示的用户数
+        PERFORMANCE_MODE_THRESHOLD: 15, // 超过此数量启用性能模式
+        UPDATE_INTERVAL_NORMAL: 33, // 正常模式更新间隔(30fps)
+        UPDATE_INTERVAL_PERFORMANCE: 100, // 性能模式更新间隔(10fps)
+        DATA_POINT_LIMIT: 300 // 性能模式下的数据点限制(30秒)
+    };
+
+    let performanceMode = false;
+    let userPriorityCache = {}; // 用户优先级缓存
+
+    // 美观的20色配色方案
+    const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+        '#DDA0DD', '#FF9F43', '#54A0FF', '#5F27CD', '#00D2D3',
+        '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#FD79A8',
+        '#FDCB6E', '#E84393', '#A29BFE', '#00B894', '#00CEC9'
+    ];
+
+    // 为用户分配固定颜色
+    function getUserColor(userId) {
+        const userIdStr = String(userId);
+
+        if (!userColorMap[userIdStr]) {
+            // 基于用户ID的哈希值分配颜色，确保同一个用户总是得到相同的颜色
+            let hash = 0;
+            for (let i = 0; i < userIdStr.length; i++) {
+                const char = userIdStr.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // 转换为32位整数
+            }
+
+            // 使用哈希值选择颜色
+            const colorIndex = Math.abs(hash) % colors.length;
+            userColorMap[userIdStr] = colors[colorIndex];
+        }
+
+        return userColorMap[userIdStr];
+    }
+
+    // 服务器状态提示管理
+    function showServerStatus(status, message, autoHide = true) {
+        const statusElement = document.getElementById('serverStatus');
+        const textElement = document.getElementById('serverStatusText');
+
+        if (!statusElement || !textElement) return;
+
+        // 清除之前的自动隐藏定时器
+        if (serverStatusTimeout) {
+            clearTimeout(serverStatusTimeout);
+            serverStatusTimeout = null;
+        }
+
+        // 更新状态样式
+        statusElement.className = 'server-status show ' + status;
+        textElement.textContent = message;
+
+        // 自动隐藏（连接成功状态3秒后隐藏，其他状态不自动隐藏）
+        if (autoHide && status === 'connected') {
+            serverStatusTimeout = setTimeout(() => {
+                hideServerStatus();
+            }, 3000);
+        }
+    }
+
+    function hideServerStatus() {
+        const statusElement = document.getElementById('serverStatus');
+        if (statusElement) {
+            statusElement.classList.remove('show');
+        }
+        if (serverStatusTimeout) {
+            clearTimeout(serverStatusTimeout);
+            serverStatusTimeout = null;
+        }
+    }
+
+    // 用户优先级计算 - 基于DPS和活跃度
+    function calculateUserPriority(userId, userArray) {
+        const user = userArray.find(u => u.id.toString() === userId);
+        if (!user) return 0;
+
+        const dpsScore = user.realtime_dps_max || 0;
+        const totalDamageScore = (user.total_damage?.total || 0) / 100000; // 归一化
+        const activityScore = dpsHistory[userId] ?
+            dpsHistory[userId].filter(p => p.dps > 0).length : 0;
+
+        // 手动设置昵称的用户优先级更高
+        const nicknameBonus = userNicknames[userId] ? 1000 : 0;
+
+        return dpsScore + totalDamageScore + activityScore + nicknameBonus;
+    }
+
+    // 获取优先显示的用户列表
+    function getTopPriorityUsers(userArray, maxCount) {
+        const userIds = Object.keys(dpsHistory).filter(userId =>
+            visibleUsers[userId] !== false &&
+            dpsHistory[userId] &&
+            dpsHistory[userId].length > 0
+        );
+
+        // 计算并缓存优先级
+        userIds.forEach(userId => {
+            userPriorityCache[userId] = calculateUserPriority(userId, userArray);
+        });
+
+        // 按优先级排序并限制数量
+        return userIds
+            .sort((a, b) => userPriorityCache[b] - userPriorityCache[a])
+            .slice(0, maxCount);
+    }
+
+    // WebSocket连接初始化
+    function initWebSocket() {
+        try {
+            showServerStatus('reconnecting', '🔄 正在连接服务器...', false);
+            socket = io();
+
+            socket.on('connect', () => {
+                console.log('WebSocket连接成功');
+                isWebSocketConnected = true;
+                lastWebSocketMessage = Date.now();
+                webSocketReconnectAttempts = 0;
+                showServerStatus('connected', '✅ 服务器连接成功');
+
+                // 如果之前启用了API备用，现在切换回WebSocket
+                if (fallbackToAPI) {
+                    console.log('WebSocket重连成功，从API模式切换回WebSocket模式');
+                    fallbackToAPI = false;
+                    stopAPIFallback();
                 }
-                
-                // 使用哈希值选择颜色
-                const colorIndex = Math.abs(hash) % colors.length;
-                userColorMap[userIdStr] = colors[colorIndex];
-            }
-            
-            return userColorMap[userIdStr];
-        }
-
-        // 服务器状态提示管理
-        function showServerStatus(status, message, autoHide = true) {
-            const statusElement = document.getElementById('serverStatus');
-            const textElement = document.getElementById('serverStatusText');
-            
-            if (!statusElement || !textElement) return;
-            
-            // 清除之前的自动隐藏定时器
-            if (serverStatusTimeout) {
-                clearTimeout(serverStatusTimeout);
-                serverStatusTimeout = null;
-            }
-            
-            // 更新状态样式
-            statusElement.className = 'server-status show ' + status;
-            textElement.textContent = message;
-            
-            // 自动隐藏（连接成功状态3秒后隐藏，其他状态不自动隐藏）
-            if (autoHide && status === 'connected') {
-                serverStatusTimeout = setTimeout(() => {
-                    hideServerStatus();
-                }, 3000);
-            }
-        }
-        
-        function hideServerStatus() {
-            const statusElement = document.getElementById('serverStatus');
-            if (statusElement) {
-                statusElement.classList.remove('show');
-            }
-            if (serverStatusTimeout) {
-                clearTimeout(serverStatusTimeout);
-                serverStatusTimeout = null;
-            }
-        }
-        
-        // 用户优先级计算 - 基于DPS和活跃度
-        function calculateUserPriority(userId, userArray) {
-            const user = userArray.find(u => u.id.toString() === userId);
-            if (!user) return 0;
-            
-            const dpsScore = user.realtime_dps_max || 0;
-            const totalDamageScore = (user.total_damage?.total || 0) / 100000; // 归一化
-            const activityScore = dpsHistory[userId] ? 
-                dpsHistory[userId].filter(p => p.dps > 0).length : 0;
-            
-            // 手动设置昵称的用户优先级更高
-            const nicknameBonus = userNicknames[userId] ? 1000 : 0;
-            
-            return dpsScore + totalDamageScore + activityScore + nicknameBonus;
-        }
-        
-        // 获取优先显示的用户列表
-        function getTopPriorityUsers(userArray, maxCount) {
-            const userIds = Object.keys(dpsHistory).filter(userId => 
-                visibleUsers[userId] !== false && 
-                dpsHistory[userId] && 
-                dpsHistory[userId].length > 0
-            );
-            
-            // 计算并缓存优先级
-            userIds.forEach(userId => {
-                userPriorityCache[userId] = calculateUserPriority(userId, userArray);
             });
-            
-            // 按优先级排序并限制数量
-            return userIds
-                .sort((a, b) => userPriorityCache[b] - userPriorityCache[a])
-                .slice(0, maxCount);
+
+            socket.on('disconnect', () => {
+                console.log('WebSocket连接断开');
+                isWebSocketConnected = false;
+                webSocketReconnectAttempts++;
+                if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接断开', false);
+            });
+
+            socket.on('data', (data) => {
+                lastWebSocketMessage = Date.now();
+                // 暂停时不处理数据更新
+                if (!isPaused) {
+                    processDataUpdate(data);
+                }
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('WebSocket连接错误:', error);
+                isWebSocketConnected = false;
+                if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接失败', false);
+            });
+
+        } catch (error) {
+            console.error('WebSocket初始化失败:', error);
+            showServerStatus('disconnected', '❌ WebSocket初始化失败', false);
+            startAPIFallback();
+        }
+    }
+
+    // 监控WebSocket连接状态，5秒无消息则切换到API
+    function monitorWebSocketConnection() {
+        setInterval(() => {
+            // 暂停时不进行连接监控
+            if (isPaused) return;
+
+            const timeSinceLastMessage = Date.now() - lastWebSocketMessage;
+
+            if (timeSinceLastMessage > 5000 && !fallbackToAPI) {
+                console.warn('WebSocket超过5秒无消息，切换到API轮询模式');
+                fallbackToAPI = true;
+                showServerStatus('api-mode', '📡 切换到API轮询模式', false);
+                startAPIFallback();
+            }
+        }, 5000); // 每5秒检查一次
+    }
+
+    // 启动API备用模式
+    function startAPIFallback() {
+        if (apiInterval) return; // 避免重复启动
+
+        console.log('启动API轮询备用模式');
+        showServerStatus('api-mode', '📡 使用API轮询模式', false);
+        apiInterval = setInterval(fetchData, 100);
+    }
+
+    // 停止API备用模式
+    function stopAPIFallback() {
+        if (apiInterval) {
+            clearInterval(apiInterval);
+            apiInterval = null;
+            console.log('停止API轮询备用模式');
+        }
+    }
+
+    // 获取用户数据的辅助函数
+    function getUserFromArray(userId) {
+        return currentUserArray.find(user => user.id.toString() === userId.toString());
+    }
+
+    // 处理数据更新（WebSocket和API通用）
+    function processDataUpdate(data, updateHistory = true) {
+        try {
+            // 将数据转换为数组以便排序
+            const userArray = Object.keys(data.user).map(id => ({
+                id: Number(id),
+                ...data.user[id]
+            }));
+
+            // 缓存当前用户数组
+            currentUserArray = userArray;
+
+            // 更新DPS历史数据
+            if (updateHistory) {
+                updateDpsHistory(userArray);
+            }
+
+            // 更新用户控制列表
+            updateUserControlsList(userArray);
+
+            // 根据当前排序模式排序
+            sortUserArray(userArray);
+
+            // 过滤不可见的用户
+            const visibleUserArray = userArray.filter(user => visibleUsers[user.id] !== false);
+            lastVisiableUserArray = visibleUserArray;
+            updateTables(visibleUserArray);
+
+            // 检查是否需要启用性能模式
+            const activeUserCount = Object.keys(dpsHistory).length;
+            const shouldEnablePerformanceMode = activeUserCount > CHART_CONFIG.PERFORMANCE_MODE_THRESHOLD;
+
+            if (shouldEnablePerformanceMode !== performanceMode) {
+                performanceMode = shouldEnablePerformanceMode;
+                console.log(`${performanceMode ? '启用' : '关闭'}性能模式 (用户数: ${activeUserCount})`);
+            }
+
+            // 更新图表
+            if (updateHistory) {
+                updateChart(userArray);
+            }
+        } catch (err) {
+            console.error('处理数据更新失败：', err);
+        }
+    }
+
+    // 生成表格行
+    function updateTables(visibleUserArray) {
+        const damageTable = document.getElementById('damageTable').querySelector('tbody');
+        damageTable.innerHTML = '';
+        for (const user of visibleUserArray) {
+            const crit_rate = user.total_count.critical / user.total_count.total;
+            const lucky_rate = user.total_count.lucky / user.total_count.total;
+
+            const row = document.createElement('tr');
+
+            // 角色ID列
+            const uidCell = document.createElement('td');
+            uidCell.textContent = `${user.id}`;
+            row.appendChild(uidCell);
+
+            // 角色昵称列
+            const nicknameCell = document.createElement('td');
+            // Check if user.name is a non-empty string
+            const hasValidName = user.name && user.name.trim() !== '';
+            const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
+
+            nicknameCell.textContent = nickname;
+            row.appendChild(nicknameCell);
+
+            const isSimpleMode = document.body.classList.contains('simple-mode');
+
+            // 其他数据列
+            const otherCells = [
+                user.profession || '未知',
+                user.taken_damage,
+                `${(crit_rate * 100).toFixed(2)}%`,
+                `${(lucky_rate * 100).toFixed(2)}%`,
+            ];
+            if (currentDataGroup === 'damage' || currentDataGroup === 'all') {
+                otherCells.push(user.total_damage.total);
+                if (!isSimpleMode) {
+                    otherCells.push(
+                        user.total_damage.critical,
+                        user.total_damage.lucky,
+                        user.total_damage.crit_lucky,
+                    );
+                }
+                otherCells.push(
+                    user.realtime_dps,
+                    user.realtime_dps_max,
+                    user.total_dps.toFixed(2),
+                );
+            }
+            if (currentDataGroup === 'healing' || currentDataGroup === 'all') {
+                otherCells.push(user.total_healing.total);
+                if (!isSimpleMode) {
+                    otherCells.push(
+                        user.total_healing.critical,
+                        user.total_healing.lucky,
+                        user.total_healing.crit_lucky,
+                    );
+                }
+                otherCells.push(
+                    user.realtime_hps,
+                    user.realtime_hps_max,
+                    user.total_hps.toFixed(2),
+                );
+            }
+
+            otherCells.forEach(cellData => {
+                const cell = document.createElement('td');
+                cell.textContent = cellData;
+                row.appendChild(cell);
+            });
+
+            damageTable.appendChild(row);
+        }
+    }
+
+    async function fetchData() {
+        // 暂停时不获取数据
+        if (isPaused) return;
+
+        try {
+            const res = await fetch('/api/data');
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+            processDataUpdate(data);
+
+            // API请求成功时，如果显示的是断线状态，更新为API模式
+            if (fallbackToAPI) {
+                showServerStatus('api-mode', '📡 API轮询模式运行中', false);
+            }
+        } catch (err) {
+            console.error('获取数据失败：', err);
+            showServerStatus('disconnected', '❌ 无法获取服务器数据', false);
+        }
+    }
+
+    function sortUserArray(userArray) {
+        switch (currentSortMode) {
+            case 'damage':
+                userArray.sort((a, b) => b.total_damage.total - a.total_damage.total);
+                break;
+            case 'uid':
+                userArray.sort((a, b) => a.id - b.id);
+                break;
+            case 'dps':
+                userArray.sort((a, b) => b.total_dps - a.total_dps);
+                break;
+            case 'realtimeDpsMax':
+                userArray.sort((a, b) => b.realtime_dps_max - a.realtime_dps_max);
+                break;
+            case 'takenDamage':
+                userArray.sort((a, b) => b.taken_damage - a.taken_damage);
+                break;
+            case 'healing':
+                userArray.sort((a, b) => b.total_healing.total - a.total_healing.total);
+                break;
+            case 'hps':
+                userArray.sort((a, b) => b.total_hps - a.total_hps);
+                break;
+            case 'realtimeHpsMax':
+                userArray.sort((a, b) => b.realtime_hps_max - a.realtime_hps_max);
+                break;
+            default:
+                userArray.sort((a, b) => a.id - b.id);
+                break;
+        }
+    }
+
+    function updateSortMode() {
+        const select = document.getElementById('sortSelect');
+        currentSortMode = select.value;
+        localStorage.setItem('sortMode', currentSortMode);
+        fetchData();
+    }
+
+    async function clearData() {
+        const res = await fetch('/api/clear');
+        const data = await res.json();
+
+        // 清空历史数据和图表缓存
+        dpsHistory = {};
+        chartDatasetMap = {};
+        userPriorityCache = {};
+        userColorMap = {}; // 清空颜色映射
+        currentUserArray = []; // 清空当前用户数组缓存
+        lastUpdateTime = 0; // 重置图表更新时间
+        performanceMode = false;
+
+        // 清空ECharts图表 - 完全重新初始化
+        if (chart) {
+            // 销毁现有图表
+            chart.dispose();
+            chart = null;
+
+            // 重置图表初始化状态
+            chartInitialized = false;
+
+            // 重新初始化空图表
+            initChart();
         }
 
-        // WebSocket连接初始化
-        function initWebSocket() {
-            try {
-                showServerStatus('reconnecting', '🔄 正在连接服务器...', false);
-                socket = io();
-                
-                socket.on('connect', () => {
-                    console.log('WebSocket连接成功');
-                    isWebSocketConnected = true;
-                    lastWebSocketMessage = Date.now();
-                    webSocketReconnectAttempts = 0;
-                    showServerStatus('connected', '✅ 服务器连接成功');
-                    
-                    // 如果之前启用了API备用，现在切换回WebSocket
-                    if (fallbackToAPI) {
-                        console.log('WebSocket重连成功，从API模式切换回WebSocket模式');
-                        fallbackToAPI = false;
-                        stopAPIFallback();
-                    }
-                });
-                
-                socket.on('disconnect', () => {
-                    console.log('WebSocket连接断开');
-                    isWebSocketConnected = false;
-                    webSocketReconnectAttempts++;
-                    if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接断开', false);
-                });
-                
-                socket.on('data', (data) => {
-                    lastWebSocketMessage = Date.now();
-                    // 暂停时不处理数据更新
-                    if (!isPaused) {
-                        processDataUpdate(data);
-                    }
-                });
-                
-                socket.on('connect_error', (error) => {
-                    console.error('WebSocket连接错误:', error);
-                    isWebSocketConnected = false;
-                    if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接失败', false);
-                });
-                
-            } catch (error) {
-                console.error('WebSocket初始化失败:', error);
-                showServerStatus('disconnected', '❌ WebSocket初始化失败', false);
+        // 清空控制面板中的用户控制项
+        const userControlsList = document.getElementById('userControlsList');
+        if (userControlsList) {
+            userControlsList.innerHTML = '';
+        }
+
+        // 清空表格显示
+        const damageTable = document.getElementById('damageTable').querySelector('tbody');
+        damageTable.innerHTML = '';
+
+        // 即使在暂停状态下也要获取数据以显示清空后的结果
+        // 临时保存暂停状态
+        const wasPaused = isPaused;
+        isPaused = false;
+
+        // 获取并显示清空后的数据
+        await fetchData();
+
+        // 恢复暂停状态
+        isPaused = wasPaused;
+    }
+
+    function toggleDarkMode() {
+        const body = document.body;
+        const isDarkMode = body.classList.contains('dark-mode');
+        const button = event.target;
+
+        if (isDarkMode) {
+            body.classList.remove('dark-mode');
+            button.textContent = '🌙 夜间模式';
+            localStorage.setItem('darkMode', 'false');
+        } else {
+            body.classList.add('dark-mode');
+            button.textContent = '☀️ 日间模式';
+            localStorage.setItem('darkMode', 'true');
+        }
+    }
+
+    function toggleSimpleMode() {
+        const body = document.body;
+        const isSimpleMode = body.classList.contains('simple-mode');
+        const button = event.target;
+
+        if (isSimpleMode) {
+            body.classList.remove('simple-mode');
+            button.textContent = '📋 简洁模式';
+            localStorage.setItem('simpleMode', 'false');
+        } else {
+            body.classList.add('simple-mode');
+            button.textContent = '📄 详细模式';
+            localStorage.setItem('simpleMode', 'true');
+        }
+
+        // 在暂停状态下，直接使用缓存的数据重新渲染表格，不更新DPS历史
+        if (isPaused && currentUserArray.length > 0) {
+            // 创建一个临时的数据对象，使用已缓存的用户数据
+            const tempData = {
+                user: {}
+            };
+            currentUserArray.forEach(user => {
+                tempData.user[user.id] = user;
+            });
+
+            // 调用processDataUpdate但跳过DPS历史更新
+            processDataUpdate(tempData, false); // 传入false表示不更新DPS历史
+        } else if (!isPaused) {
+            // 非暂停状态下正常更新
+            fetchData();
+        }
+    }
+
+    // 切换暂停/开始统计
+    function togglePause() {
+        isPaused = !isPaused;
+        const button = document.getElementById('pauseButton');
+
+        if (isPaused) {
+            button.textContent = '▶️ 开始统计';
+            console.log('统计已暂停');
+            // 暂停时停止API轮询
+            stopAPIFallback();
+        } else {
+            button.textContent = '⏸️ 暂停统计';
+            console.log('统计已开始');
+            // 重新开始时，如果是API模式则重新启动
+            if (fallbackToAPI) {
                 startAPIFallback();
             }
         }
-        
-        // 监控WebSocket连接状态，5秒无消息则切换到API
-        function monitorWebSocketConnection() {
-            setInterval(() => {
-                // 暂停时不进行连接监控
-                if (isPaused) return;
-                
-                const timeSinceLastMessage = Date.now() - lastWebSocketMessage;
-                
-                if (timeSinceLastMessage > 5000 && !fallbackToAPI) {
-                    console.warn('WebSocket超过5秒无消息，切换到API轮询模式');
-                    fallbackToAPI = true;
-                    showServerStatus('api-mode', '📡 切换到API轮询模式', false);
-                    startAPIFallback();
-                }
-            }, 5000); // 每5秒检查一次
+
+        // 保存暂停状态到本地存储
+        localStorage.setItem('isPaused', isPaused.toString());
+
+        // 通知服务器暂停/开始状态
+        fetch('/api/pause', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ paused: isPaused })
+        }).catch(err => {
+            console.error('设置暂停状态失败：', err);
+        });
+    }
+
+    // 页面加载时检查本地存储的主题偏好和排序偏好
+    function initTheme() {
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        const body = document.body;
+        const button = document.querySelector('button[onclick="toggleDarkMode()"]');
+
+        if (isDarkMode) {
+            body.classList.add('dark-mode');
+            button.textContent = '☀️ 日间模式';
         }
-        
-        // 启动API备用模式
-        function startAPIFallback() {
-            if (apiInterval) return; // 避免重复启动
-            
-            console.log('启动API轮询备用模式');
-            showServerStatus('api-mode', '📡 使用API轮询模式', false);
-            apiInterval = setInterval(fetchData, 100);
+    }
+
+    function initSimpleMode() {
+        const isSimpleMode = localStorage.getItem('simpleMode') === 'true';
+        const body = document.body;
+        const button = document.querySelector('button[onclick="toggleSimpleMode()"]');
+
+        if (isSimpleMode) {
+            body.classList.add('simple-mode');
+            button.textContent = '📄 详细模式';
         }
-        
-        // 停止API备用模式
-        function stopAPIFallback() {
-            if (apiInterval) {
-                clearInterval(apiInterval);
-                apiInterval = null;
-                console.log('停止API轮询备用模式');
-            }
+    }
+
+    function initSortMode() {
+        const savedSortMode = localStorage.getItem('sortMode');
+        if (savedSortMode) {
+            currentSortMode = savedSortMode;
+            document.getElementById('sortSelect').value = savedSortMode;
         }
-        
-        // 获取用户数据的辅助函数
-        function getUserFromArray(userId) {
-            return currentUserArray.find(user => user.id.toString() === userId.toString());
+    }
+
+    // 初始化数据组显示模式
+    function initDataGroup() {
+        const savedDataGroup = localStorage.getItem('dataGroup') || 'damage';
+        currentDataGroup = savedDataGroup;
+        setDataGroup(savedDataGroup);
+    }
+
+    // 切换数据组显示
+    function toggleDataGroup(group) {
+        currentDataGroup = group;
+        setDataGroup(group);
+        localStorage.setItem('dataGroup', group);
+        if (isPaused) updateTables(lastVisiableUserArray);
+    }
+
+    // 设置数据组显示状态
+    function setDataGroup(group) {
+        const body = document.body;
+        const damageBtn = document.getElementById('damageGroupBtn');
+        const healingBtn = document.getElementById('healingGroupBtn');
+        const allBtn = document.getElementById('allGroupBtn');
+
+        body.classList.remove('hide-damage', 'hide-healing');
+        [damageBtn, healingBtn, allBtn].forEach(btn => {
+            if (btn) btn.classList.remove('active');
+        });
+
+        switch (group) {
+            case 'damage':
+                body.classList.add('hide-healing');
+                if (damageBtn) damageBtn.classList.add('active');
+                break;
+            case 'healing':
+                body.classList.add('hide-damage');
+                if (healingBtn) healingBtn.classList.add('active');
+                break;
+            case 'all':
+                if (allBtn) allBtn.classList.add('active');
+                break;
+            default:
+                // 默认显示伤害&DPS
+                body.classList.add('hide-healing');
+                if (damageBtn) damageBtn.classList.add('active');
+                break;
         }
-        
-        // 处理数据更新（WebSocket和API通用）
-        function processDataUpdate(data) {
-            try {
-                // 将数据转换为数组以便排序
-                const userArray = Object.keys(data.user).map(id => ({
-                    id: Number(id),
-                    ...data.user[id]
-                }));
-                
-                // 缓存当前用户数组
-                currentUserArray = userArray;
-                
-                // 更新DPS历史数据
-                updateDpsHistory(userArray);
-                
-                // 更新用户控制列表
-                updateUserControlsList(userArray);
-                
-                // 根据当前排序模式排序
-                sortUserArray(userArray);
-                
-                // 过滤不可见的用户
-                const visibleUserArray = userArray.filter(user => visibleUsers[user.id] !== false);
-                lastVisiableUserArray = visibleUserArray;
-                updateTables(visibleUserArray);
-                
-                // 检查是否需要启用性能模式
-                const activeUserCount = Object.keys(dpsHistory).length;
-                const shouldEnablePerformanceMode = activeUserCount > CHART_CONFIG.PERFORMANCE_MODE_THRESHOLD;
-                
-                if (shouldEnablePerformanceMode !== performanceMode) {
-                    performanceMode = shouldEnablePerformanceMode;
-                    console.log(`${performanceMode ? '启用' : '关闭'}性能模式 (用户数: ${activeUserCount})`);
-                }
-                
-                // 更新图表
-                updateChart(userArray);
-            } catch (err) {
-                console.error('处理数据更新失败：', err);
-            }
+    }
+
+    // 初始化暂停状态 - 优先从服务器获取状态
+    async function initPauseState() {
+        try {
+            // 从服务器获取当前暂停状态
+            const response = await fetch('/api/pause');
+            const data = await response.json();
+            isPaused = data.paused;
+        } catch (error) {
+            // 如果服务器获取失败，从本地存储获取
+            console.warn('获取服务器暂停状态失败，使用本地存储状态');
+            const savedPauseState = localStorage.getItem('isPaused');
+            isPaused = savedPauseState === 'true';
         }
 
-        // 生成表格行
-        function updateTables(visibleUserArray) {
-            const damageTable = document.getElementById('damageTable').querySelector('tbody');
-            damageTable.innerHTML = '';
-            for (const user of visibleUserArray) {
-                const crit_rate = user.total_count.critical / user.total_count.total;
-                const lucky_rate = user.total_count.lucky / user.total_count.total;
-                
-                const row = document.createElement('tr');
-                
-                // 角色ID列
-                const uidCell = document.createElement('td');
-                uidCell.textContent = `${user.id}`;
-                row.appendChild(uidCell);
-                
-                // 角色昵称列
-                const nicknameCell = document.createElement('td');
-                // Check if user.name is a non-empty string
-                const hasValidName = user.name && user.name.trim() !== '';
-                const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
-                
-                nicknameCell.textContent = nickname;
-                row.appendChild(nicknameCell);
-                
-                const isSimpleMode = document.body.classList.contains('simple-mode');
-                
-                // 其他数据列
-                const otherCells = [
-                    user.profession || '未知',
-                    user.taken_damage,
-                    `${(crit_rate * 100).toFixed(2)}%`,
-                    `${(lucky_rate * 100).toFixed(2)}%`,
-                ];
-                if (currentDataGroup === 'damage' || currentDataGroup === 'all') {
-                    otherCells.push(user.total_damage.total);
-                    if (!isSimpleMode) {
-                        otherCells.push(
-                            user.total_damage.critical,
-                            user.total_damage.lucky,
-                            user.total_damage.crit_lucky,
-                        );
-                    }
-                    otherCells.push(
-                        user.realtime_dps,
-                        user.realtime_dps_max,
-                        user.total_dps.toFixed(2),
-                    );
-                }
-                if (currentDataGroup === 'healing' || currentDataGroup === 'all') {
-                    otherCells.push(user.total_healing.total);
-                    if (!isSimpleMode) {
-                        otherCells.push(
-                            user.total_healing.critical,
-                            user.total_healing.lucky,
-                            user.total_healing.crit_lucky,
-                        );
-                    }
-                    otherCells.push(
-                        user.realtime_hps,
-                        user.realtime_hps_max,
-                        user.total_hps.toFixed(2),
-                    );
-                }
-                
-                otherCells.forEach(cellData => {
-                    const cell = document.createElement('td');
-                    cell.textContent = cellData;
-                    row.appendChild(cell);
-                });
-                
-                damageTable.appendChild(row);
-            }
+        // 更新按钮状态
+        const button = document.getElementById('pauseButton');
+        if (isPaused) {
+            button.textContent = '▶️ 开始统计';
+        } else {
+            button.textContent = '⏸️ 暂停统计';
         }
+    }
 
-        async function fetchData() {
-            // 暂停时不获取数据
-            if (isPaused) return;
-            
-            try {
-                const res = await fetch('/api/data');
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-                }
-                const data = await res.json();
-                processDataUpdate(data);
-                
-                // API请求成功时，如果显示的是断线状态，更新为API模式
-                if (fallbackToAPI) {
-                    showServerStatus('api-mode', '📡 API轮询模式运行中', false);
-                }
-            } catch (err) {
-                console.error('获取数据失败：', err);
-                showServerStatus('disconnected', '❌ 无法获取服务器数据', false);
-            }
-        }
+    // DPS历史数据管理 - 保持数据真实性
+    function updateDpsHistory(userArray) {
+        const currentTime = Date.now();
 
-        function sortUserArray(userArray) {
-            switch (currentSortMode) {
-                case 'damage':
-                    userArray.sort((a, b) => b.total_damage.total - a.total_damage.total);
-                    break;
-                case 'uid':
-                    userArray.sort((a, b) => a.id - b.id);
-                    break;
-                case 'dps':
-                    userArray.sort((a, b) => b.total_dps - a.total_dps);
-                    break;
-                case 'realtimeDpsMax':
-                    userArray.sort((a, b) => b.realtime_dps_max - a.realtime_dps_max);
-                    break;
-                case 'takenDamage':
-                    userArray.sort((a, b) => b.taken_damage - a.taken_damage);
-                    break;
-                case 'healing':
-                    userArray.sort((a, b) => b.total_healing.total - a.total_healing.total);
-                    break;
-                case 'hps':
-                    userArray.sort((a, b) => b.total_hps - a.total_hps);
-                    break;
-                case 'realtimeHpsMax':
-                    userArray.sort((a, b) => b.realtime_hps_max - a.realtime_hps_max);
-                    break;
-                default:
-                    userArray.sort((a, b) => a.id - b.id);
-                    break;
+        for (const user of userArray) {
+            if (!dpsHistory[user.id]) {
+                dpsHistory[user.id] = [];
             }
-        }
 
-        function updateSortMode() {
-            const select = document.getElementById('sortSelect');
-            currentSortMode = select.value;
-            localStorage.setItem('sortMode', currentSortMode);
-            fetchData();
-        }
-
-        async function clearData() {
-            const res = await fetch('/api/clear');
-            const data = await res.json();
-            
-            // 清空历史数据和图表缓存
-            dpsHistory = {};
-            chartDatasetMap = {};
-            userPriorityCache = {};
-            userColorMap = {}; // 清空颜色映射
-            performanceMode = false;
-            
-            // 清空ECharts图表
-            if (chart && typeof chart.setOption === 'function') {
-                // 温和地清空数据，保持基础配置不变
-                chart.setOption({
-                    series: [],
-                    legend: {
-                        data: []
-                    }
-                });
-            }
-            
-            // 清空控制面板中的用户控制项
-            const userControlsList = document.getElementById('userControlsList');
-            if (userControlsList) {
-                userControlsList.innerHTML = '';
-            }
-            
-            fetchData();
-        }
-
-        function toggleDarkMode() {
-            const body = document.body;
-            const isDarkMode = body.classList.contains('dark-mode');
-            const button = event.target;
-            
-            if (isDarkMode) {
-                body.classList.remove('dark-mode');
-                button.textContent = '🌙 夜间模式';
-                localStorage.setItem('darkMode', 'false');
-            } else {
-                body.classList.add('dark-mode');
-                button.textContent = '☀️ 日间模式';
-                localStorage.setItem('darkMode', 'true');
-            }
-        }
-
-        function toggleSimpleMode() {
-            const body = document.body;
-            const isSimpleMode = body.classList.contains('simple-mode');
-            const button = event.target;
-            
-            if (isSimpleMode) {
-                body.classList.remove('simple-mode');
-                button.textContent = '📋 简洁模式';
-                localStorage.setItem('simpleMode', 'false');
-            } else {
-                body.classList.add('simple-mode');
-                button.textContent = '📄 详细模式';
-                localStorage.setItem('simpleMode', 'true');
-            }
-        }
-
-        // 切换暂停/开始统计
-        function togglePause() {
-            isPaused = !isPaused;
-            const button = document.getElementById('pauseButton');
-            
-            if (isPaused) {
-                button.textContent = '▶️ 开始统计';
-                console.log('统计已暂停');
-                // 暂停时停止API轮询
-                stopAPIFallback();
-            } else {
-                button.textContent = '⏸️ 暂停统计';
-                console.log('统计已开始');
-                // 重新开始时，如果是API模式则重新启动
-                if (fallbackToAPI) {
-                    startAPIFallback();
-                }
-            }
-            
-            // 保存暂停状态到本地存储
-            localStorage.setItem('isPaused', isPaused.toString());
-            
-            // 通知服务器暂停/开始状态
-            fetch('/api/pause', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ paused: isPaused })
-            }).catch(err => {
-                console.error('设置暂停状态失败：', err);
+            // 只记录真实的DPS数据，不进行人工平滑
+            dpsHistory[user.id].push({
+                time: currentTime,
+                dps: user.realtime_dps,
+                isActive: user.realtime_dps > 0 // 标记是否在活跃输出
             });
-        }
 
-        // 页面加载时检查本地存储的主题偏好和排序偏好
-        function initTheme() {
-            const isDarkMode = localStorage.getItem('darkMode') === 'true';
-            const body = document.body;
-            const button = document.querySelector('button[onclick="toggleDarkMode()"]');
-            
-            if (isDarkMode) {
-                body.classList.add('dark-mode');
-                button.textContent = '☀️ 日间模式';
-            }
+            // 保持最多60秒的数据
+            const cutoffTime = currentTime - 60000; // 60秒前
+            dpsHistory[user.id] = dpsHistory[user.id].filter(point => point.time > cutoffTime);
         }
+    }
 
-        function initSimpleMode() {
-            const isSimpleMode = localStorage.getItem('simpleMode') === 'true';
-            const body = document.body;
-            const button = document.querySelector('button[onclick="toggleSimpleMode()"]');
-            
-            if (isSimpleMode) {
-                body.classList.add('simple-mode');
-                button.textContent = '📄 详细模式';
-            }
-        }
+    // 初始化ECharts图表
+    function initChart() {
+        const chartDom = document.getElementById('dpsChart');
+        chart = echarts.init(chartDom);
 
-        function initSortMode() {
-            const savedSortMode = localStorage.getItem('sortMode');
-            if (savedSortMode) {
-                currentSortMode = savedSortMode;
-                document.getElementById('sortSelect').value = savedSortMode;
-            }
-        }
-
-        // 初始化数据组显示模式
-        function initDataGroup() {
-            const savedDataGroup = localStorage.getItem('dataGroup') || 'damage';
-            currentDataGroup = savedDataGroup;
-            setDataGroup(savedDataGroup);
-        }
-
-        // 切换数据组显示
-        function toggleDataGroup(group) {
-            currentDataGroup = group;
-            setDataGroup(group);
-            localStorage.setItem('dataGroup', group);
-            if (isPaused) updateTables(lastVisiableUserArray);
-        }
-
-        // 设置数据组显示状态
-        function setDataGroup(group) {
-            const body = document.body;
-            const damageBtn = document.getElementById('damageGroupBtn');
-            const healingBtn = document.getElementById('healingGroupBtn');
-            const allBtn = document.getElementById('allGroupBtn');
-            
-            body.classList.remove('hide-damage', 'hide-healing');
-            [damageBtn, healingBtn, allBtn].forEach(btn => {
-                if (btn) btn.classList.remove('active');
-            });
-            
-            switch (group) {
-                case 'damage':
-                    body.classList.add('hide-healing');
-                    if (damageBtn) damageBtn.classList.add('active');
-                    break;
-                case 'healing':
-                    body.classList.add('hide-damage');
-                    if (healingBtn) healingBtn.classList.add('active');
-                    break;
-                case 'all':
-                    if (allBtn) allBtn.classList.add('active');
-                    break;
-                default:
-                    // 默认显示伤害&DPS
-                    body.classList.add('hide-healing');
-                    if (damageBtn) damageBtn.classList.add('active');
-                    break;
-            }
-        }
-
-        // 初始化暂停状态 - 优先从服务器获取状态
-        async function initPauseState() {
-            try {
-                // 从服务器获取当前暂停状态
-                const response = await fetch('/api/pause');
-                const data = await response.json();
-                isPaused = data.paused;
-            } catch (error) {
-                // 如果服务器获取失败，从本地存储获取
-                console.warn('获取服务器暂停状态失败，使用本地存储状态');
-                const savedPauseState = localStorage.getItem('isPaused');
-                isPaused = savedPauseState === 'true';
-            }
-            
-            // 更新按钮状态
-            const button = document.getElementById('pauseButton');
-            if (isPaused) {
-                button.textContent = '▶️ 开始统计';
-            } else {
-                button.textContent = '⏸️ 暂停统计';
-            }
-        }
-
-        // DPS历史数据管理 - 保持数据真实性
-        function updateDpsHistory(userArray) {
-            const currentTime = Date.now();
-            
-            for (const user of userArray) {
-                if (!dpsHistory[user.id]) {
-                    dpsHistory[user.id] = [];
-                }
-                
-                // 只记录真实的DPS数据，不进行人工平滑
-                dpsHistory[user.id].push({
-                    time: currentTime,
-                    dps: user.realtime_dps,
-                    isActive: user.realtime_dps > 0 // 标记是否在活跃输出
-                });
-                
-                // 保持最多60秒的数据
-                const cutoffTime = currentTime - 60000; // 60秒前
-                dpsHistory[user.id] = dpsHistory[user.id].filter(point => point.time > cutoffTime);
-            }
-        }
-        
-        // 初始化ECharts图表
-        function initChart() {
-            const chartDom = document.getElementById('dpsChart');
-            chart = echarts.init(chartDom);
-            
-            const option = {
-                backgroundColor: 'transparent',
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '8%',
-                    top: '15%',
-                    containLabel: true
+        const option = {
+            backgroundColor: 'transparent',
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '8%',
+                top: '15%',
+                containLabel: true
+            },
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(50, 50, 50, 0.9)',
+                borderColor: '#777',
+                borderWidth: 1,
+                textStyle: {
+                    color: '#fff',
+                    fontSize: 12
                 },
-                tooltip: {
-                    trigger: 'axis',
-                    backgroundColor: 'rgba(50, 50, 50, 0.9)',
-                    borderColor: '#777',
-                    borderWidth: 1,
-                    textStyle: {
-                        color: '#fff',
-                        fontSize: 12
-                    },
-                    axisPointer: {
-                        type: 'cross',
-                        crossStyle: {
-                            color: '#999'
-                        }
-                    },
-                    formatter: function(params) {
-                        if (params.length === 0) return '';
-                        let result = `<div style="font-weight: bold; margin-bottom: 4px;">时间: ${params[0].name}</div>`;
-                        params.forEach(param => {
-                            if (param.value !== null && param.value !== undefined) {
-                                result += `<div style="margin: 2px 0;">
+                axisPointer: {
+                    type: 'cross',
+                    crossStyle: {
+                        color: '#999'
+                    }
+                },
+                formatter: function(params) {
+                    if (params.length === 0) return '';
+                    let result = `<div style="font-weight: bold; margin-bottom: 4px;">时间: ${params[0].name}</div>`;
+                    params.forEach(param => {
+                        if (param.value !== null && param.value !== undefined) {
+                            result += `<div style="margin: 2px 0;">
                                     <span style="display: inline-block; width: 10px; height: 10px; background: ${param.color}; border-radius: 50%; margin-right: 6px;"></span>
                                     ${param.seriesName}: <span style="font-weight: bold;">${param.value}</span>
                                 </div>`;
-                            }
-                        });
-                        return result;
-                    }
-                },
-                legend: {
-                    type: 'scroll',
-                    orient: 'horizontal',
-                    top: 10,
-                    textStyle: {
-                        fontSize: 12,
-                        color: '#666'
-                    },
-                    pageButtonItemGap: 10,
-                    pageButtonPosition: 'end',
-                    pageFormatter: '{current}/{total}',
-                    pageIconColor: '#666',
-                    pageIconInactiveColor: '#ccc',
-                    pageTextStyle: {
-                        color: '#666',
-                        fontSize: 12
-                    }
-                },
-                xAxis: {
-                    type: 'category',
-                    data: [],
-                    axisLine: {
-                        lineStyle: {
-                            color: '#ddd'
-                        }
-                    },
-                    axisTick: {
-                        lineStyle: {
-                            color: '#ddd'
-                        }
-                    },
-                    axisLabel: {
-                        color: '#666',
-                        fontSize: 11,
-                        formatter: function(value, index) {
-                            return index % 100 === 0 ? `${60 - Math.floor(index / 10)}s` : '';
-                        }
-                    },
-                    splitLine: {
-                        show: true,
-                        lineStyle: {
-                            color: '#f0f0f0',
-                            type: 'dashed'
-                        }
-                    }
-                },
-                yAxis: {
-                    type: 'value',
-                    name: 'DPS',
-                    nameTextStyle: {
-                        color: '#666',
-                        fontSize: 12
-                    },
-                    axisLine: {
-                        lineStyle: {
-                            color: '#ddd'
-                        }
-                    },
-                    axisTick: {
-                        lineStyle: {
-                            color: '#ddd'
-                        }
-                    },
-                    axisLabel: {
-                        color: '#666',
-                        fontSize: 11,
-                        formatter: function(value) {
-                            if (value >= 1000) {
-                                return (value / 1000).toFixed(1) + 'K';
-                            }
-                            return value;
-                        }
-                    },
-                    splitLine: {
-                        lineStyle: {
-                            color: '#f0f0f0',
-                            type: 'dashed'
-                        }
-                    }
-                },
-                series: []
-            };
-            
-            chart.setOption(option);
-            
-            // 监听图例的选择变化事件，同步控制面板复选框状态
-            chart.on('legendselectchanged', function (params) {
-                // 防止从控制面板触发的事件再次处理
-                if (isUpdatingFromLegend) return;
-                
-                const seriesName = params.name;
-                const isSelected = params.selected[seriesName];
-                
-                // 查找对应的用户ID
-                let userId = null;
-                
-                // 检查是否是UID格式的昵称
-                const uidMatch = seriesName.match(/UID:(\d+)/);
-                if (uidMatch) {
-                    userId = uidMatch[1];
-                } else {
-                    // 查找自定义昵称对应的userId
-                    userId = Object.keys(userNicknames).find(id => userNicknames[id] === seriesName);
-                }
-                
-                if (userId) {
-                    const userIdStr = String(userId);
-                    
-                    // 同步visibleUsers状态
-                    if (isSelected) {
-                        delete visibleUsers[userIdStr];
-                    } else {
-                        visibleUsers[userIdStr] = false;
-                    }
-                    localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
-                    
-                    // 同步控制面板复选框状态
-                    const controlElement = document.querySelector(`[data-user-id="${userIdStr}"]`);
-                    if (controlElement) {
-                        const checkbox = controlElement.querySelector('.visibility-checkbox');
-                        if (checkbox) {
-                            checkbox.checked = isSelected;
-                        }
-                    }
-                }
-            });
-            
-            // 响应窗口大小变化
-            window.addEventListener('resize', () => {
-                chart.resize();
-            });
-        }
-        
-        // 更新图表 - 增量更新避免闪烁
-        function updateChart(userArray) {
-            if (!chart) return;
-            
-            const currentTime = Date.now();
-            
-            // 动态更新频率控制
-            const updateInterval = performanceMode ? 
-                CHART_CONFIG.UPDATE_INTERVAL_PERFORMANCE : 
-                CHART_CONFIG.UPDATE_INTERVAL_NORMAL;
-                
-            if (currentTime - lastUpdateTime < updateInterval) return;
-            lastUpdateTime = currentTime;
-            
-            // 获取优先显示的用户
-            const priorityUsers = getTopPriorityUsers(userArray, CHART_CONFIG.MAX_VISIBLE_USERS);
-            const activeUserSet = new Set(priorityUsers);
-            
-            // 性能模式下的数据长度
-            const dataLength = performanceMode ? CHART_CONFIG.DATA_POINT_LIMIT : MAX_HISTORY_LENGTH;
-            
-            // 获取当前图表配置
-            const currentOption = chart.getOption();
-            const currentSeries = currentOption.series || [];
-            
-            // 生成时间轴数据 (只在初次或数据长度变化时更新)
-            if (!chartInitialized || !currentOption.xAxis || !currentOption.xAxis[0] || currentOption.xAxis[0].data.length !== dataLength) {
-                const xAxisData = [];
-                for (let i = 0; i < dataLength; i++) {
-                    xAxisData.push('');
-                }
-                
-                chart.setOption({
-                    xAxis: {
-                        data: xAxisData
-                    }
-                }, false, true); // 不合并，静默更新
-                
-                chartInitialized = true;
-            }
-            
-            // 更新series
-            const updatedSeries = [];
-            const existingSeriesMap = {};
-            
-            // 建立现有series映射
-            currentSeries.forEach((series, index) => {
-                existingSeriesMap[series.name] = { index, series };
-            });
-            
-            // 处理每个优先用户
-            priorityUsers.forEach((userId, index) => {
-                const history = dpsHistory[userId];
-                const user = getUserFromArray(userId);
-                const hasValidName = user?.name && user.name.trim() !== '';
-                const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
-                const color = getUserColor(userId); // 使用固定颜色分配
-                
-                // 构建数据数组
-                const data = new Array(dataLength).fill(null);
-                
-                // 填充真实数据点
-                const timeStep = performanceMode ? 200 : 100;
-                history.forEach(point => {
-                    const timeAgo = currentTime - point.time;
-                    const dataIndex = dataLength - 1 - Math.floor(timeAgo / timeStep);
-                    if (dataIndex >= 0 && dataIndex < dataLength) {
-                        data[dataIndex] = point.dps;
-                    }
-                });
-                
-                // 平滑处理 - 避免突兀的断线
-                if (!performanceMode) {
-                    for (let i = 1; i < data.length; i++) {
-                        if (data[i] === null && data[i-1] !== null) {
-                            // 查找间隔长度
-                            let gapLength = 0;
-                            for (let j = i; j < Math.min(i + 10, data.length); j++) {
-                                if (data[j] !== null) break;
-                                gapLength++;
-                            }
-                            // 短间隔保持水平线，避免视觉断裂
-                            if (gapLength <= 5) {
-                                data[i] = data[i-1];
-                            }
-                        }
-                    }
-                }
-                
-                // 线条样式
-                const lineWidths = [3, 2.5, 2.2, 1.8, 1.5];
-                const widthIndex = Math.floor(index / 4) % lineWidths.length;
-                const lineWidth = performanceMode ? Math.max(1.5, lineWidths[widthIndex] - 0.5) : lineWidths[widthIndex];
-                
-                // 检查是否存在同名series
-                if (existingSeriesMap[nickname]) {
-                    // 更新现有series数据 - 避免重建
-                    const existingSeries = existingSeriesMap[nickname].series;
-                    updatedSeries.push({
-                        ...existingSeries,
-                        data: data,
-                        lineStyle: {
-                            ...existingSeries.lineStyle,
-                            color: color,
-                            width: lineWidth
-                        },
-                        itemStyle: {
-                            color: color
                         }
                     });
-                } else {
-                    // 创建新series
-                    updatedSeries.push({
-                        name: nickname,
-                        type: 'line',
-                        data: data,
-                        lineStyle: {
-                            color: color,
-                            width: lineWidth,
-                            cap: 'round',
-                            join: 'round'
-                        },
-                        itemStyle: {
-                            color: color
-                        },
-                        symbol: 'none',
-                        smooth: 0.15, // 减少平滑度避免过度计算
-                        connectNulls: false,
-                        sampling: 'lttb',
-                        animation: false, // 完全禁用动画
-                        silent: false, // 保持交互性
-                        emphasis: {
-                            focus: 'series',
-                            lineStyle: {
-                                width: lineWidth + 0.5
-                            }
+                    return result;
+                }
+            },
+            legend: {
+                type: 'scroll',
+                orient: 'horizontal',
+                top: 10,
+                textStyle: {
+                    fontSize: 12,
+                    color: '#666'
+                },
+                pageButtonItemGap: 10,
+                pageButtonPosition: 'end',
+                pageFormatter: '{current}/{total}',
+                pageIconColor: '#666',
+                pageIconInactiveColor: '#ccc',
+                pageTextStyle: {
+                    color: '#666',
+                    fontSize: 12
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: [],
+                axisLine: {
+                    lineStyle: {
+                        color: '#ddd'
+                    }
+                },
+                axisTick: {
+                    lineStyle: {
+                        color: '#ddd'
+                    }
+                },
+                axisLabel: {
+                    color: '#666',
+                    fontSize: 11,
+                    formatter: function(value, index) {
+                        return index % 100 === 0 ? `${60 - Math.floor(index / 10)}s` : '';
+                    }
+                },
+                splitLine: {
+                    show: true,
+                    lineStyle: {
+                        color: '#f0f0f0',
+                        type: 'dashed'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: 'DPS',
+                nameTextStyle: {
+                    color: '#666',
+                    fontSize: 12
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#ddd'
+                    }
+                },
+                axisTick: {
+                    lineStyle: {
+                        color: '#ddd'
+                    }
+                },
+                axisLabel: {
+                    color: '#666',
+                    fontSize: 11,
+                    formatter: function(value) {
+                        if (value >= 1000) {
+                            return (value / 1000).toFixed(1) + 'K';
                         }
-                    });
+                        return value;
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#f0f0f0',
+                        type: 'dashed'
+                    }
                 }
-            });
-            
-            // 构建图例选中状态对象
-            const legendSelected = {};
-            updatedSeries.forEach(series => {
-                const seriesName = series.name;
-                // 检查是否是UID格式的昵称
-                const uidMatch = seriesName.match(/UID:(\d+)/);
-                let userId = null;
-                
-                if (uidMatch) {
-                    userId = uidMatch[1];
+            },
+            series: []
+        };
+
+        chart.setOption(option);
+
+        // 监听图例的选择变化事件，同步控制面板复选框状态
+        chart.on('legendselectchanged', function (params) {
+            // 防止从控制面板触发的事件再次处理
+            if (isUpdatingFromLegend) return;
+
+            const seriesName = params.name;
+            const isSelected = params.selected[seriesName];
+
+            // 查找对应的用户ID
+            let userId = null;
+
+            // 检查是否是UID格式的昵称
+            const uidMatch = seriesName.match(/UID:(\d+)/);
+            if (uidMatch) {
+                userId = uidMatch[1];
+            } else {
+                // 查找自定义昵称对应的userId
+                userId = Object.keys(userNicknames).find(id => userNicknames[id] === seriesName);
+            }
+
+            if (userId) {
+                const userIdStr = String(userId);
+
+                // 同步visibleUsers状态
+                if (isSelected) {
+                    delete visibleUsers[userIdStr];
                 } else {
-                    // 查找自定义昵称对应的userId
-                    userId = Object.keys(userNicknames).find(id => userNicknames[id] === seriesName);
+                    visibleUsers[userIdStr] = false;
                 }
-                
-                // 确保userId是字符串类型进行比较
-                const userIdStr = userId ? String(userId) : null;
-                
-                // 根据visibleUsers设置图例选中状态
-                legendSelected[seriesName] = !(userIdStr && visibleUsers[userIdStr] === false);
-            });
-            
-            // 使用ECharts内置的图例机制，统一处理显示/隐藏
-            chart.setOption({
-                series: updatedSeries,
-                legend: {
-                    data: updatedSeries.map(s => s.name), // 重新设置图例数据
-                    selected: legendSelected,
-                    textStyle: {
-                        color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#666'
-                    }
-                }
-            }, false, true);
-            
-            // 更新状态显示
-            updateChartStatus(priorityUsers.length, Object.keys(dpsHistory).length);
-        }
-        
-        // 更新图表状态显示
-        function updateChartStatus(visibleCount, totalCount) {
-            const statusElement = document.getElementById('chartStatus');
-            if (!statusElement) return;
-            
-            statusElement.textContent = `显示 ${visibleCount}/${totalCount} 用户`;
-            statusElement.style.color = '#666';
-        }
-        
-        // 更新用户控制列表
-        function updateUserControlsList(userArray) {
-            const controlsList = document.getElementById('userControlsList');
-            const existingControls = new Set(Array.from(controlsList.children).map(el => el.dataset.userId));
-            
-            for (const user of userArray) {
-                const userIdStr = String(user.id);
-                
-                if (existingControls.has(userIdStr)) {
-                    // 更新已存在控件的复选框状态
-                    const existingControl = controlsList.querySelector(`[data-user-id="${userIdStr}"]`);
-                    if (existingControl) {
-                        const checkbox = existingControl.querySelector('.visibility-checkbox');
-                        const isVisible = visibleUsers[userIdStr] !== false;
-                        checkbox.checked = isVisible;
-                    }
-                    continue;
-                }
-                
-                const hasValidName = user.name && user.name.trim() !== '';
-                const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${user.id}`;
-                const isVisible = visibleUsers[userIdStr] !== false;
-                
-                const controlDiv = document.createElement('div');
-                controlDiv.className = 'user-controls';
-                controlDiv.dataset.userId = userIdStr;
-                const placeholderText = (hasValidName ? user.name : '昵称');
-                controlDiv.innerHTML = `
-                    <input type="checkbox" class="visibility-checkbox" ${isVisible ? 'checked' : ''} onchange="toggleUserVisibility(${user.id}, this.checked)">
-                    <input type="text" class="user-nickname-input" value="${userNicknames[userIdStr] || ''}" placeholder="${placeholderText}" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
-                    <span class="user-uid">(UID:${user.id})</span>
-                `;
-                
-                controlsList.appendChild(controlDiv);
-            }
-        }
-        
-        // 更新昵称
-        function updateNickname(userId, nickname) {
-            if (nickname.trim()) {
-                userNicknames[userId] = nickname.trim();
-            } else {
-                delete userNicknames[userId];
-            }
-            localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
-        }
-        
-        // 切换用户可见性
-        function toggleUserVisibility(userId, isVisible) {
-            // 确保userId是字符串类型
-            const userIdStr = String(userId);
-            
-            if (isVisible) {
-                delete visibleUsers[userIdStr];
-            } else {
-                visibleUsers[userIdStr] = false;
-            }
-            localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
-            
-            // 使用ECharts的dispatchAction来切换图例，这样与图例点击行为完全一致
-            if (chart) {
-                // 设置标志防止递归触发
-                isUpdatingFromLegend = true;
-                
-                // 找到对应的series名称
-                const user = getUserFromArray(userId);
-                const hasValidName = user?.name && user.name.trim() !== '';
-                const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${userId}`;
-                
-                // 通过ECharts API切换图例选中状态
-                chart.dispatchAction({
-                    type: 'legendToggleSelect',
-                    name: nickname
-                });
-                
-                // 重置标志
-                setTimeout(() => {
-                    isUpdatingFromLegend = false;
-                }, 100);
-            }
-        }
-        
-        // 全选/取消全选
-        function toggleAllUsers() {
-            const checkboxes = document.querySelectorAll('.visibility-checkbox');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            
-            // 批量更新所有用户的可见性状态
-            checkboxes.forEach(cb => {
-                cb.checked = !allChecked;
-                const userId = cb.parentElement.dataset.userId;
-                
-                if (!allChecked) {
-                    // 全选：显示所有用户
-                    delete visibleUsers[userId];
-                } else {
-                    // 取消全选：隐藏所有用户
-                    visibleUsers[userId] = false;
-                }
-            });
-            
-            localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
-            
-            // 批量同步图例状态
-            if (chart) {
-                checkboxes.forEach(cb => {
-                    const userId = cb.parentElement.dataset.userId;
-                    const user = getUserFromArray(userId);
-                    const hasValidName = user?.name && user.name.trim() !== '';
-                    const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
-                    
-                    // 设置标志防止递归触发
-                    isUpdatingFromLegend = true;
-                    
-                    // 通过ECharts API同步图例状态
-                    if (!allChecked) {
-                        // 全选：显示图例
-                        chart.dispatchAction({
-                            type: 'legendSelect',
-                            name: nickname
-                        });
-                    } else {
-                        // 取消全选：隐藏图例
-                        chart.dispatchAction({
-                            type: 'legendUnSelect',
-                            name: nickname
-                        });
-                    }
-                });
-                
-                // 重置标志
-                setTimeout(() => {
-                    isUpdatingFromLegend = false;
-                }, 200);
-            }
-            
-            // 触发数据更新，重新渲染表格
-            fetchData();
-        }
-        
-        // 清空所有昵称
-        function clearNicknames() {
-            if (confirm('确定要清空所有自定义昵称吗？')) {
-                userNicknames = {};
-                localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
-                
-                // 清空控制面板中的所有昵称输入框
-                document.querySelectorAll('.user-nickname-input').forEach(input => {
-                    input.value = '';
-                });
-            }
-        }
+                localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
 
-        // 切换控制面板弹窗显示/隐藏
-        function toggleControlsModal() {
-            const modal = document.getElementById('controlsModal');
-            const isVisible = modal.style.display === 'block';
-            
-            if (isVisible) {
-                modal.style.display = 'none';
-            } else {
-                modal.style.display = 'block';
-            }
-        }
-
-        // 点击弹窗外部区域关闭弹窗
-        window.onclick = function(event) {
-            const modal = document.getElementById('controlsModal');
-            if (event.target === modal) {
-                toggleControlsModal();
-            }
-        }
-
-        // 键盘ESC键关闭弹窗
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                const modal = document.getElementById('controlsModal');
-                if (modal.style.display === 'block') {
-                    toggleControlsModal();
+                // 同步控制面板复选框状态
+                const controlElement = document.querySelector(`[data-user-id="${userIdStr}"]`);
+                if (controlElement) {
+                    const checkbox = controlElement.querySelector('.visibility-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = isSelected;
+                    }
                 }
             }
         });
 
-        // 初始化
-        function initialize() {
-            initTheme();
-            initSimpleMode();
-            initSortMode();
-            initDataGroup();
-            initPauseState();
-            initChart();
-            
-            // 显示初始连接状态
-            showServerStatus('reconnecting', '🔄 正在初始化连接...', false);
-            
-            // 初始化WebSocket连接
-            initWebSocket();
-            
-            // 启动WebSocket连接监控
-            monitorWebSocketConnection();
-            
-            // 只在初始化时获取一次数据，后续通过WebSocket接收
-            fetchData();
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => {
+            chart.resize();
+        });
+    }
+
+    // 更新图表 - 增量更新避免闪烁
+    function updateChart(userArray) {
+        if (!chart) return;
+
+        const currentTime = Date.now();
+
+        // 动态更新频率控制
+        const updateInterval = performanceMode ?
+            CHART_CONFIG.UPDATE_INTERVAL_PERFORMANCE :
+            CHART_CONFIG.UPDATE_INTERVAL_NORMAL;
+
+        if (currentTime - lastUpdateTime < updateInterval) return;
+        lastUpdateTime = currentTime;
+
+        // 获取优先显示的用户
+        const priorityUsers = getTopPriorityUsers(userArray, CHART_CONFIG.MAX_VISIBLE_USERS);
+        const activeUserSet = new Set(priorityUsers);
+
+        // 性能模式下的数据长度
+        const dataLength = performanceMode ? CHART_CONFIG.DATA_POINT_LIMIT : MAX_HISTORY_LENGTH;
+
+        // 获取当前图表配置
+        const currentOption = chart.getOption();
+        const currentSeries = currentOption.series || [];
+
+        // 生成时间轴数据 (只在初次或数据长度变化时更新)
+        if (!chartInitialized || !currentOption.xAxis || !currentOption.xAxis[0] || currentOption.xAxis[0].data.length !== dataLength) {
+            const xAxisData = [];
+            for (let i = 0; i < dataLength; i++) {
+                xAxisData.push('');
+            }
+
+            chart.setOption({
+                xAxis: {
+                    data: xAxisData
+                }
+            }, false, true); // 不合并，静默更新
+
+            chartInitialized = true;
         }
-        
-        // 等待DOM加载完成后初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
+
+        // 更新series
+        const updatedSeries = [];
+        const existingSeriesMap = {};
+
+        // 建立现有series映射
+        currentSeries.forEach((series, index) => {
+            existingSeriesMap[series.name] = { index, series };
+        });
+
+        // 处理每个优先用户
+        priorityUsers.forEach((userId, index) => {
+            const history = dpsHistory[userId];
+            const user = getUserFromArray(userId);
+            const hasValidName = user?.name && user.name.trim() !== '';
+            const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
+            const color = getUserColor(userId); // 使用固定颜色分配
+
+            // 构建数据数组
+            const data = new Array(dataLength).fill(null);
+
+            // 填充真实数据点
+            const timeStep = performanceMode ? 200 : 100;
+            history.forEach(point => {
+                const timeAgo = currentTime - point.time;
+                const dataIndex = dataLength - 1 - Math.floor(timeAgo / timeStep);
+                if (dataIndex >= 0 && dataIndex < dataLength) {
+                    data[dataIndex] = point.dps;
+                }
+            });
+
+            // 平滑处理 - 避免突兀的断线
+            if (!performanceMode) {
+                for (let i = 1; i < data.length; i++) {
+                    if (data[i] === null && data[i-1] !== null) {
+                        // 查找间隔长度
+                        let gapLength = 0;
+                        for (let j = i; j < Math.min(i + 10, data.length); j++) {
+                            if (data[j] !== null) break;
+                            gapLength++;
+                        }
+                        // 短间隔保持水平线，避免视觉断裂
+                        if (gapLength <= 5) {
+                            data[i] = data[i-1];
+                        }
+                    }
+                }
+            }
+
+            // 线条样式
+            const lineWidths = [3, 2.5, 2.2, 1.8, 1.5];
+            const widthIndex = Math.floor(index / 4) % lineWidths.length;
+            const lineWidth = performanceMode ? Math.max(1.5, lineWidths[widthIndex] - 0.5) : lineWidths[widthIndex];
+
+            // 检查是否存在同名series
+            if (existingSeriesMap[nickname]) {
+                // 更新现有series数据 - 避免重建
+                const existingSeries = existingSeriesMap[nickname].series;
+                updatedSeries.push({
+                    ...existingSeries,
+                    data: data,
+                    lineStyle: {
+                        ...existingSeries.lineStyle,
+                        color: color,
+                        width: lineWidth
+                    },
+                    itemStyle: {
+                        color: color
+                    }
+                });
+            } else {
+                // 创建新series
+                updatedSeries.push({
+                    name: nickname,
+                    type: 'line',
+                    data: data,
+                    lineStyle: {
+                        color: color,
+                        width: lineWidth,
+                        cap: 'round',
+                        join: 'round'
+                    },
+                    itemStyle: {
+                        color: color
+                    },
+                    symbol: 'none',
+                    smooth: 0.15, // 减少平滑度避免过度计算
+                    connectNulls: false,
+                    sampling: 'lttb',
+                    animation: false, // 完全禁用动画
+                    silent: false, // 保持交互性
+                    emphasis: {
+                        focus: 'series',
+                        lineStyle: {
+                            width: lineWidth + 0.5
+                        }
+                    }
+                });
+            }
+        });
+
+        // 构建图例选中状态对象
+        const legendSelected = {};
+        updatedSeries.forEach(series => {
+            const seriesName = series.name;
+            // 检查是否是UID格式的昵称
+            const uidMatch = seriesName.match(/UID:(\d+)/);
+            let userId = null;
+
+            if (uidMatch) {
+                userId = uidMatch[1];
+            } else {
+                // 查找自定义昵称对应的userId
+                userId = Object.keys(userNicknames).find(id => userNicknames[id] === seriesName);
+            }
+
+            // 确保userId是字符串类型进行比较
+            const userIdStr = userId ? String(userId) : null;
+
+            // 根据visibleUsers设置图例选中状态
+            legendSelected[seriesName] = !(userIdStr && visibleUsers[userIdStr] === false);
+        });
+
+        // 使用ECharts内置的图例机制，统一处理显示/隐藏
+        chart.setOption({
+            series: updatedSeries,
+            legend: {
+                data: updatedSeries.map(s => s.name), // 重新设置图例数据
+                selected: legendSelected,
+                textStyle: {
+                    color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#666'
+                }
+            }
+        }, false, true);
+
+        // 更新状态显示
+        updateChartStatus(priorityUsers.length, Object.keys(dpsHistory).length);
+    }
+
+    // 更新图表状态显示
+    function updateChartStatus(visibleCount, totalCount) {
+        const statusElement = document.getElementById('chartStatus');
+        if (!statusElement) return;
+
+        statusElement.textContent = `显示 ${visibleCount}/${totalCount} 用户`;
+        statusElement.style.color = '#666';
+    }
+
+    // 更新用户控制列表
+    function updateUserControlsList(userArray) {
+        const controlsList = document.getElementById('userControlsList');
+        const existingControls = new Set(Array.from(controlsList.children).map(el => el.dataset.userId));
+
+        for (const user of userArray) {
+            const userIdStr = String(user.id);
+
+            if (existingControls.has(userIdStr)) {
+                // 更新已存在控件的复选框状态
+                const existingControl = controlsList.querySelector(`[data-user-id="${userIdStr}"]`);
+                if (existingControl) {
+                    const checkbox = existingControl.querySelector('.visibility-checkbox');
+                    const isVisible = visibleUsers[userIdStr] !== false;
+                    checkbox.checked = isVisible;
+                }
+                continue;
+            }
+
+            const hasValidName = user.name && user.name.trim() !== '';
+            const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${user.id}`;
+            const isVisible = visibleUsers[userIdStr] !== false;
+
+            const controlDiv = document.createElement('div');
+            controlDiv.className = 'user-controls';
+            controlDiv.dataset.userId = userIdStr;
+            const placeholderText = (hasValidName ? user.name : '昵称');
+            controlDiv.innerHTML = `
+                    <input type="checkbox" class="visibility-checkbox" ${isVisible ? 'checked' : ''} onchange="toggleUserVisibility(${user.id}, this.checked)">
+                    <input type="text" class="user-nickname-input" value="${userNicknames[userIdStr] || ''}" placeholder="${placeholderText}" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
+                    <span class="user-uid">(UID:${user.id})</span>
+                `;
+
+            controlsList.appendChild(controlDiv);
+        }
+    }
+
+    // 更新昵称
+    function updateNickname(userId, nickname) {
+        if (nickname.trim()) {
+            userNicknames[userId] = nickname.trim();
         } else {
-            initialize();
+            delete userNicknames[userId];
         }
-    </script>
+        localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+    }
+
+    // 切换用户可见性
+    function toggleUserVisibility(userId, isVisible) {
+        // 确保userId是字符串类型
+        const userIdStr = String(userId);
+
+        if (isVisible) {
+            delete visibleUsers[userIdStr];
+        } else {
+            visibleUsers[userIdStr] = false;
+        }
+        localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
+
+        // 使用ECharts的dispatchAction来切换图例，这样与图例点击行为完全一致
+        if (chart) {
+            // 设置标志防止递归触发
+            isUpdatingFromLegend = true;
+
+            // 找到对应的series名称
+            const user = getUserFromArray(userId);
+            const hasValidName = user?.name && user.name.trim() !== '';
+            const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${userId}`;
+
+            // 通过ECharts API切换图例选中状态
+            chart.dispatchAction({
+                type: 'legendToggleSelect',
+                name: nickname
+            });
+
+            // 重置标志
+            setTimeout(() => {
+                isUpdatingFromLegend = false;
+            }, 100);
+        }
+    }
+
+    // 全选/取消全选
+    function toggleAllUsers() {
+        const checkboxes = document.querySelectorAll('.visibility-checkbox');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+        // 批量更新所有用户的可见性状态
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+            const userId = cb.parentElement.dataset.userId;
+
+            if (!allChecked) {
+                // 全选：显示所有用户
+                delete visibleUsers[userId];
+            } else {
+                // 取消全选：隐藏所有用户
+                visibleUsers[userId] = false;
+            }
+        });
+
+        localStorage.setItem('visibleUsers', JSON.stringify(visibleUsers));
+
+        // 批量同步图例状态
+        if (chart) {
+            checkboxes.forEach(cb => {
+                const userId = cb.parentElement.dataset.userId;
+                const user = getUserFromArray(userId);
+                const hasValidName = user?.name && user.name.trim() !== '';
+                const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
+
+                // 设置标志防止递归触发
+                isUpdatingFromLegend = true;
+
+                // 通过ECharts API同步图例状态
+                if (!allChecked) {
+                    // 全选：显示图例
+                    chart.dispatchAction({
+                        type: 'legendSelect',
+                        name: nickname
+                    });
+                } else {
+                    // 取消全选：隐藏图例
+                    chart.dispatchAction({
+                        type: 'legendUnSelect',
+                        name: nickname
+                    });
+                }
+            });
+
+            // 重置标志
+            setTimeout(() => {
+                isUpdatingFromLegend = false;
+            }, 200);
+        }
+
+        // 触发数据更新，重新渲染表格
+        fetchData();
+    }
+
+    // 清空所有昵称
+    function clearNicknames() {
+        if (confirm('确定要清空所有自定义昵称吗？')) {
+            userNicknames = {};
+            localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+
+            // 清空控制面板中的所有昵称输入框
+            document.querySelectorAll('.user-nickname-input').forEach(input => {
+                input.value = '';
+            });
+        }
+    }
+
+    // 切换控制面板弹窗显示/隐藏
+    function toggleControlsModal() {
+        const modal = document.getElementById('controlsModal');
+        const isVisible = modal.style.display === 'block';
+
+        if (isVisible) {
+            modal.style.display = 'none';
+        } else {
+            modal.style.display = 'block';
+        }
+    }
+
+    // 点击弹窗外部区域关闭弹窗
+    window.onclick = function(event) {
+        const modal = document.getElementById('controlsModal');
+        if (event.target === modal) {
+            toggleControlsModal();
+        }
+    }
+
+    // 键盘ESC键关闭弹窗
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('controlsModal');
+            if (modal.style.display === 'block') {
+                toggleControlsModal();
+            }
+        }
+    });
+
+    // 初始化
+    function initialize() {
+        initTheme();
+        initSimpleMode();
+        initSortMode();
+        initDataGroup();
+        initPauseState();
+        initChart();
+
+        // 显示初始连接状态
+        showServerStatus('reconnecting', '🔄 正在初始化连接...', false);
+
+        // 初始化WebSocket连接
+        initWebSocket();
+
+        // 启动WebSocket连接监控
+        monitorWebSocketConnection();
+
+        // 只在初始化时获取一次数据，后续通过WebSocket接收
+        fetchData();
+    }
+
+    // 等待DOM加载完成后初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        initialize();
+    }
+</script>
 </body>
 
 </html>
