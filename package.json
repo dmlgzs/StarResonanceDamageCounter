@@ -15,6 +15,7 @@
     "cap": "^0.2.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "google-protobuf": "^3.21.4",
     "long": "^5.3.2",
     "protobufjs": "^7.5.3",
     "socket.io": "^4.8.1",

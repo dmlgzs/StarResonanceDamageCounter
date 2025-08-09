@@ -1,2 +1,4 @@
 node_modules/
 bak/
+users.json
+.vscode

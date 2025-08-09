@@ -2,13 +2,11 @@ const cap = require('cap');
 const cors = require('cors');
 const readline = require('readline');
 const winston = require("winston");
-const net = require('net');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const PacketProcessor = require('./algo/packet');
-const pb = require('./algo/pb');
 const Readable = require("stream").Readable;
 const Cap = cap.Cap;
 const decoders = cap.decoders;
@@ -335,7 +333,8 @@ class UserData {
 
 // 用户数据管理器
 class UserDataManager {
-    constructor() {
+    constructor(logger) {
+        this.logger = logger
         this.users = new Map();
         this.userCache = new Map(); // 用户名字和职业缓存
         this.cacheFilePath = './users.json';
@@ -349,10 +348,10 @@ class UserDataManager {
                 const data = fs.readFileSync(this.cacheFilePath, 'utf8');
                 const cacheData = JSON.parse(data);
                 this.userCache = new Map(Object.entries(cacheData));
-                console.log(`Loaded ${this.userCache.size} user cache entries`);
+                this.logger.info(`Loaded ${this.userCache.size} user cache entries`);
             }
         } catch (error) {
-            console.error('Failed to load user cache:', error);
+            this.logger.error('Failed to load user cache:', error);
         }
     }
 
@@ -362,7 +361,7 @@ class UserDataManager {
             const cacheData = Object.fromEntries(this.userCache);
             fs.writeFileSync(this.cacheFilePath, JSON.stringify(cacheData, null, 2), 'utf8');
         } catch (error) {
-            console.error('Failed to save user cache:', error);
+            this.logger.error('Failed to save user cache:', error);
         }
     }
 
@@ -429,15 +428,18 @@ class UserDataManager {
      * */
     setProfession(uid, profession) {
         const user = this.getUser(uid);
-        user.setProfession(profession);
-        
-        // 更新缓存
-        const uidStr = String(uid);
-        if (!this.userCache.has(uidStr)) {
-            this.userCache.set(uidStr, {});
+        if (user.profession !== profession) {
+            user.setProfession(profession);
+            this.logger.info(`Found profession ${profession} for uid ${uid}`);
+
+            // 更新缓存
+            const uidStr = String(uid);
+            if (!this.userCache.has(uidStr)) {
+                this.userCache.set(uidStr, {});
+            }
+            this.userCache.get(uidStr).profession = profession;
+            this.saveUserCache();
         }
-        this.userCache.get(uidStr).profession = profession;
-        this.saveUserCache();
     }
 
     /** 设置用户姓名
@@ -446,24 +448,30 @@ class UserDataManager {
      * */
     setName(uid, name) {
         const user = this.getUser(uid);
-        user.setName(name);
-        
-        // 更新缓存
-        const uidStr = String(uid);
-        if (!this.userCache.has(uidStr)) {
-            this.userCache.set(uidStr, {});
+        if (user.name !== name) {
+            user.setName(name);
+            this.logger.info(`Found player name ${name} for uid ${uid}`);
+
+            // 更新缓存
+            const uidStr = String(uid);
+            if (!this.userCache.has(uidStr)) {
+                this.userCache.set(uidStr, {});
+            }
+            this.userCache.get(uidStr).name = name;
+            this.saveUserCache();
         }
-        this.userCache.get(uidStr).name = name;
-        this.saveUserCache();
     }
 
     /** 设置用户总评分
      * @param {number} uid - 用户ID
      * @param {number} fightPoint - 总评分
-     */
-    setFightPoint(uid, fightPoint) {
-        const user = this.getUser(uid);
-        user.setFightPoint(fightPoint);
+    */
+   setFightPoint(uid, fightPoint) {
+       const user = this.getUser(uid);
+       if (user.fightPoint != fightPoint) {
+           user.setFightPoint(fightPoint);
+           this.logger.info(`Found fight point ${fightPoint} for uid ${uid}`);
+        }
     }
 
     /** 更新所有用户的实时DPS和HPS */
@@ -505,8 +513,6 @@ class UserDataManager {
         return Array.from(this.users.keys());
     }
 }
-
-const userDataManager = new UserDataManager();
 
 // 暂停统计状态
 let isPaused = false;
@@ -560,6 +566,8 @@ async function main() {
             new winston.transports.Console()
         ]
     });
+
+    const userDataManager = new UserDataManager(logger);
 
     //瞬时DPS更新
     setInterval(() => {
@@ -684,7 +692,7 @@ async function main() {
     fragmentIpCache = {};
     const getTCPPacket = (frameBuffer, ethOffset) => {
         const ipPacket = decoders.IPV4(frameBuffer, ethOffset);
-        const ipId = ipPacket.info.id;
+        const ipId = `${ipPacket.info.id}-${ipPacket.info.srcaddr}-${ipPacket.info.dstaddr}`;
         const isFragment = (ipPacket.info.flags & 0x1) !== 0;
 
         if (isFragment || ipPacket.info.fragoffset > 0) {
