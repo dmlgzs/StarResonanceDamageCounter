@@ -499,6 +499,9 @@ class UserDataManager {
                 if (cachedData.profession) {
                     user.setProfession(cachedData.profession);
                 }
+                if (cachedData.fightPoint !== undefined && cachedData.fightPoint !== null) {
+                    user.setFightPoint(cachedData.fightPoint);
+                }
             }
 
             this.users.set(uid, user);
@@ -589,6 +592,14 @@ class UserDataManager {
         if (user.fightPoint != fightPoint) {
             user.setFightPoint(fightPoint);
             this.logger.info(`Found fight point ${fightPoint} for uid ${uid}`);
+
+            // 更新缓存
+            const uidStr = String(uid);
+            if (!this.userCache.has(uidStr)) {
+                this.userCache.set(uidStr, {});
+            }
+            this.userCache.get(uidStr).fightPoint = fightPoint;
+            this.saveUserCacheThrottled();
         }
     }
 
