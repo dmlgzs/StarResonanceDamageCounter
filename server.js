@@ -20,6 +20,17 @@ const rl = readline.createInterface({
 });
 const devices = cap.deviceList();
 
+const elementMap = {
+        fire: '🔥火',
+        ice: '❄️冰',
+        thunder: '⚡雷',
+        earth: '🍀森',
+        wind: '💨风',
+        light: '✨光',
+        dark: '🌙暗',
+        physics: '⚔️'
+};
+
 function ask(question) {
     return new Promise(resolve => {
         rl.question(question, answer => {
@@ -299,10 +310,12 @@ class UserData {
             const skillConfig = require('./skill_config.json').skills;
             const cfg = skillConfig[skillId];
             const name = cfg ? cfg.name : skillId;
+            const elementype = elementMap[cfg?.element] ?? "";
 
             skills[skillId] = {
                 displayName: name,
                 type: stat.type,
+                elementype: elementype,
                 totalDamage: stat.stats.total,
                 totalCount: stat.count.total,
                 critCount: stat.count.critical,

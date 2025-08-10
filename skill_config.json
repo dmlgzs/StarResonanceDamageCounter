@@ -84,6 +84,12 @@
       "element": "wind",
       "description": "勇气风环"
     },
+    "2205450": {
+      "name": "勇气风环吸血",
+      "type": "damage",
+      "element": "wind",
+      "description": "勇气风环吸血"
+    },
     "1411": {
       "name": "疾驰锋刃",
       "type": "damage",
@@ -588,17 +594,215 @@
       "element": "fire",
       "description": "活力解放"
     },
-    "220101": {
-      "name": "弓箭手普攻",
+    "1501": {
+      "name": "掌控藤曼",
       "type": "damage",
       "element": "earth",
-      "description": "弓箭手普攻"
+      "description": "掌控藤曼"
+    },
+    "1502": {
+      "name": "掌控藤曼",
+      "type": "damage",
+      "element": "earth",
+      "description": "掌控藤曼"
+    },
+    "1503": {
+      "name": "掌控藤曼",
+      "type": "damage",
+      "element": "earth",
+      "description": "掌控藤曼"
+    },
+    "1504": {
+      "name": "掌控藤曼",
+      "type": "damage",
+      "element": "earth",
+      "description": "掌控藤曼"
+    },
+    "1509": {
+      "name": "希望结界伤害",
+      "type": "damage",
+      "element": "earth",
+      "description": "希望结界伤害"
+    },
+    "1518": {
+      "name": "狂野绽放",
+      "type": "damage",
+      "element": "earth",
+      "description": "狂野绽放"
+    },
+    "1529": {
+      "name": "盛放注能(包含伤害和治疗)",
+      "type": "damage",
+      "element": "earth",
+      "description": "盛放注能(包含伤害和治疗)"
+    },
+    "1550": {
+      "name": "不羁之种",
+      "type": "damage",
+      "element": "earth",
+      "description": "不羁之种"
+    },
+    "1551": {
+      "name": "狂野之种",
+      "type": "damage",
+      "element": "earth",
+      "description": "狂野之种"
+    },
+    "1560": {
+      "name": "再生脉冲",
+      "type": "damage",
+      "element": "earth",
+      "description": "再生脉冲"
+    },
+    "20301": {
+      "name": "生命绽放",
+      "type": "heal",
+      "element": "earth",
+      "description": "生命绽放"
+    },
+    "21402": {
+      "name": "狂野绽放治疗",
+      "type": "heal",
+      "element": "earth",
+      "description": "狂野绽放治疗"
+    },
+    "21404": {
+      "name": "滋养",
+      "type": "heal",
+      "element": "earth",
+      "description": "滋养"
+    },
+    "21406": {
+      "name": "森之祈愿",
+      "type": "heal",
+      "element": "earth",
+      "description": "森之祈愿"
+    },
+    "21414": {
+      "name": "希望结界持续(包含伤害和治疗)",
+      "type": "heal",
+      "element": "earth",
+      "description": "希望结界持续(包含伤害和治疗)"
+    },
+    "21427": {
+      "name": "休止的治愈",
+      "type": "heal",
+      "element": "earth",
+      "description": "休止的治愈"
+    },
+    "21428": {
+      "name": "休止的治愈",
+      "type": "heal",
+      "element": "earth",
+      "description": "休止的治愈"
+    },
+    "21429": {
+      "name": "休止的治愈",
+      "type": "heal",
+      "element": "earth",
+      "description": "休止的治愈"
+    },
+    "21430": {
+      "name": "休止的治愈",
+      "type": "heal",
+      "element": "earth",
+      "description": "休止的治愈"
+    },
+    "150103": {
+      "name": "不羁之种",
+      "type": "damage",
+      "element": "earth",
+      "description": "不羁之种"
+    },
+    "150104": {
+      "name": "不羁之种",
+      "type": "damage",
+      "element": "earth",
+      "description": "不羁之种"
+    },
+    "150106": {
+      "name": "灌注",
+      "type": "heal",
+      "element": "earth",
+      "description": "灌注"
+    },
+    "150107": {
+      "name": "灌注",
+      "type": "heal",
+      "element": "earth",
+      "description": "灌注"
+    },
+    "2031005": {
+      "name": "幸运一击(森语者)",
+      "type": "damage",
+      "element": "light",
+      "description": "幸运一击(森语者)"
+    },
+    "2202091": {
+      "name": "治疗链接",
+      "type": "heal",
+      "element": "earth",
+      "description": "治疗链接"
+    },
+    "2202311": {
+      "name": "滋养之种",
+      "type": "heal",
+      "element": "earth",
+      "description": "滋养之种"
+    },
+    "1541": {
+      "name": "狂野绽放",
+      "type": "damage",
+      "element": "earth",
+      "description": "狂野绽放"
+    },
+    "1561": {
+      "name": "再生脉冲(包含伤害和治疗)",
+      "type": "damage",
+      "element": "earth",
+      "description": "再生脉冲(包含伤害和治疗)"
+    },
+    "21423": {
+      "name": "共生印记",
+      "type": "heal",
+      "element": "earth",
+      "description": "共生印记"
+    },
+    "21424": {
+      "name": "荆棘",
+      "type": "damage",
+      "element": "earth",
+      "description": "荆棘"
+    },
+    "150101": {
+      "name": "鹿之奔袭",
+      "type": "damage",
+      "element": "earth",
+      "description": "鹿之奔袭"
+    },
+    "150110": {
+      "name": "灌注",
+      "type": "heal",
+      "element": "earth",
+      "description": "灌注"
+    },
+    "2031105": {
+      "name": "幸运一击(惩戒)",
+      "type": "damage",
+      "element": "light",
+      "description": "幸运一击(惩戒)"
+    },
+    "220101": {
+      "name": "弹无虚发",
+      "type": "damage",
+      "element": "earth",
+      "description": "弹无虚发"
     },
     "220103": {
-      "name": "弓箭手普攻",
+      "name": "弹无虚发",
       "type": "damage",
       "element": "earth",
-      "description": "弓箭手普攻"
+      "description": "弹无虚发"
     },
     "220104": {
       "name": "暴风箭矢",
@@ -611,6 +815,12 @@
       "type": "damage",
       "element": "light",
       "description": "锐眼·光能巨箭"
+    },
+    "2291": {
+      "name": "锐眼·光能巨箭(天赋)",
+      "type": "damage",
+      "element": "light",
+      "description": "锐眼·光能巨箭(天赋)"
     },
     "2289": {
       "name": "箭雨",
@@ -642,12 +852,6 @@
       "element": "fire",
       "description": "爆炸箭矢"
     },
-    "55231": {
-      "name": "爆炸射击",
-      "type": "damage",
-      "element": "fire",
-      "description": "爆炸射击"
-    },
     "220109": {
       "name": "威慑射击",
       "type": "damage",
@@ -655,10 +859,10 @@
       "description": "威慑射击"
     },
     "1700820": {
-      "name": "协同攻击",
+      "name": "狼协同攻击",
       "type": "damage",
       "element": "earth",
-      "description": "协同攻击"
+      "description": "狼协同攻击"
     },
     "1700827": {
       "name": "狼普攻",
@@ -678,47 +882,137 @@
       "element": "earth",
       "description": "践踏"
     },
+    "55231": {
+      "name": "爆炸射击",
+      "type": "damage",
+      "element": "fire",
+      "description": "爆炸射击"
+    },
+    "220110": {
+      "name": "爆炸箭引爆",
+      "type": "damage",
+      "element": "fire",
+      "description": "爆炸箭引爆"
+    },
+    "2203291": {
+      "name": "猎鹰出击",
+      "type": "damage",
+      "element": "light",
+      "description": "猎鹰出击"
+    },
+    "220113": {
+      "name": "幻影猎鹰",
+      "type": "damage",
+      "element": "light",
+      "description": "幻影猎鹰"
+    },
+    "2203621": {
+      "name": "光棱",
+      "type": "damage",
+      "element": "light",
+      "description": "光棱"
+    },
+    "2203622": {
+      "name": "光棱溅射",
+      "type": "damage",
+      "element": "light",
+      "description": "光棱溅射"
+    },
+    "220112": {
+      "name": "光能裂隙",
+      "type": "damage",
+      "element": "light",
+      "description": "光能裂隙"
+    },
+    "220106": {
+      "name": "二连矢",
+      "type": "damage",
+      "element": "earth",
+      "description": "二连矢"
+    },
+    "2203521": {
+      "name": "内爆(钢制喙触发)",
+      "type": "damage",
+      "element": "thunder",
+      "description": "内爆(钢制喙触发)"
+    },
+    "2203181": {
+      "name": "闪电冲击",
+      "type": "damage",
+      "element": "thunder",
+      "description": "闪电冲击"
+    },
+    "2294": {
+      "name": "光意·四连矢",
+      "type": "damage",
+      "element": "light",
+      "description": "光意·四连矢"
+    },
+    "220111": {
+      "name": "光意·四连矢",
+      "type": "damage",
+      "element": "light",
+      "description": "光意·四连矢"
+    },
+    "220203": {
+      "name": "光意·四连矢",
+      "type": "damage",
+      "element": "light",
+      "description": "光意·四连矢"
+    },
+    "2031109": {
+      "name": "幸运一击(弓箭手)",
+      "type": "damage",
+      "element": "light",
+      "description": "幸运一击(弓箭手)"
+    },
+    "220301": {
+      "name": "锐眼·光能巨箭",
+      "type": "damage",
+      "element": "light",
+      "description": "锐眼·光能巨箭"
+    },
+    "2352": {
+      "name": "天界雄鹰",
+      "type": "damage",
+      "element": "light",
+      "description": "天界雄鹰"
+    },
     "120401": {
-      "name": "冰法普攻",
+      "name": "雨打潮生",
       "type": "damage",
       "element": "ice",
-      "description": "冰法普攻"
+      "description": "雨打潮生"
     },
     "1203": {
-      "name": "冰法普攻",
+      "name": "雨打潮生",
       "type": "damage",
       "element": "ice",
-      "description": "冰法普攻"
+      "description": "雨打潮生"
     },
     "120501": {
-      "name": "冰法普攻",
+      "name": "雨打潮生",
       "type": "damage",
       "element": "ice",
-      "description": "冰法普攻"
+      "description": "雨打潮生"
     },
     "120201": {
-      "name": "冰法普攻",
+      "name": "雨打潮生",
       "type": "damage",
       "element": "ice",
-      "description": "冰法普攻"
+      "description": "雨打潮生"
     },
     "120301": {
-      "name": "冰法普攻",
+      "name": "雨打潮生",
       "type": "damage",
       "element": "ice",
-      "description": "冰法普攻"
+      "description": "雨打潮生"
     },
     "2031102": {
       "name": "幸运一击(冰法)",
       "type": "damage",
       "element": "light",
       "description": "幸运一击(冰法)"
-    },
-    "120902": {
-      "name": "冰矛",
-      "type": "damage",
-      "element": "ice",
-      "description": "冰矛"
     },
     "1248": {
       "name": "极寒·冰雪颂歌",
@@ -731,6 +1025,12 @@
       "type": "damage",
       "element": "ice",
       "description": "极寒·冰雪颂歌"
+    },
+    "120902": {
+      "name": "冰矛",
+      "type": "damage",
+      "element": "ice",
+      "description": "冰矛"
     },
     "1262": {
       "name": "陨星风暴",
@@ -791,6 +1091,12 @@
       "type": "damage",
       "element": "ice",
       "description": "冰霜冲击"
+    },
+    "1261": {
+      "name": "瞬发寒冰风暴",
+      "type": "damage",
+      "element": "ice",
+      "description": "瞬发寒冰风暴"
     },
     "2401": {
       "name": "公正之剑",
@@ -984,17 +1290,35 @@
       "element": "wind",
       "description": "飓风哥布林战士"
     },
-    "3210021": {
-      "name": "奥义！ 流星陨落",
-      "type": "damage",
-      "element": "wind",
-      "description": "飓风哥布林王"
-    },
     "2002853": {
       "name": "绝技！ 碎星陨落",
       "type": "damage",
-      "element": "wind",
+      "element": "fire",
       "description": "火焰哥布林巫师"
+    },
+    "3210081": {
+      "name": "蜥蜴人猎手（被动）",
+      "type": "damage",
+      "element": "thunder",
+      "description": "蜥蜴人猎手（被动）"
+    },
+    "391007": {
+      "name": "哥布林弩手（被动）",
+      "type": "damage",
+      "element": "physics",
+      "description": "哥布林弩手（被动）"
+    },
+    "391008": {
+      "name": "变异峰（被动）",
+      "type": "damage",
+      "element": "thunder",
+      "description": "变异峰弩手（被动）"
+    },
+    "1700440": {
+      "name": "慕课头目",
+      "type": "damage",
+      "element": "dark",
+      "description": "慕课头目"
     },
     "1222": {
       "name": "幻影冲锋",
@@ -1002,11 +1326,17 @@
       "element": "light",
       "description": "幻影冲锋"
     },
-    "2031105": {
-      "name": "幸运伤害",
+    "1241": {
+      "name": "射线",
       "type": "damage",
-      "element": "light",
-      "description": "幸运伤害"
+      "element": "ice",
+      "description": "射线"
+    },
+    "199902": {
+      "name": "岩盾",
+      "type": "damage",
+      "element": "earth",
+      "description": "岩盾"
     }
   },
   "elements": {
@@ -1024,7 +1354,7 @@
     },
     "earth": {
       "color": "#8ce99a",
-      "icon": "🌍"
+      "icon": "🍀"
     },
     "wind": {
       "color": "#91a7ff",
@@ -1037,8 +1367,12 @@
     "dark": {
       "color": "#9775fa",
       "icon": "🌙"
+    },
+    "physics": {
+      "color": "#91a7ff",
+      "icon": "⚔️"
     }
   },
-  "version": "2.0.0",
-  "last_updated": "2025-01-19"
+  "version": "2.0.1",
+  "last_updated": "2025-01-20"
 }

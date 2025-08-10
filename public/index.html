@@ -908,6 +908,7 @@
                             <tr>
                                 <th>技能ID</th>
                                 <th>类型</th>
+                                <th>元素</th>
                                 <th>总数值</th>
                                 <th>使用次数</th>
                                 <th>暴击率</th>
@@ -1213,6 +1214,7 @@
                 row.innerHTML = `
                     <td>${name}</td>
                     <td>${skill.type}</td>
+                    <td>${skill.elementype}</td>
                     <td>${skill.totalDamage.toLocaleString()}</td>
                     <td>${skill.totalCount}</td>
                     <td class="skill-crit">${(skill.critRate * 100).toFixed(2)}%</td>
@@ -1338,7 +1340,7 @@
                 },
                 xAxis: {
                     type: 'category',
-                    data: skillIds.map(id => `技能 ${id}`),
+                    data: skillIds.map(id => `${id}`), //图表技能名
                     axisLine: { lineStyle: { color: '#7f8c8d' } },
                     axisLabel: { 
                         color: '#95a5a6',
