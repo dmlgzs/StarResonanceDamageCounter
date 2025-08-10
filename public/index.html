@@ -966,6 +966,7 @@
                             <th rowspan="2" title="角色唯一标识符">角色ID</th>
                             <th rowspan="2" title="角色昵称/自定义昵称">角色昵称</th>
                             <th rowspan="2" title="角色职业">职业</th>
+                            <th rowspan="2" title="角色评分">评分</th>
                             <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
                             <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
                             <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
@@ -1676,6 +1677,7 @@
                 // 其他数据列
                 const otherCells = [
                     user.profession || '未知',
+                    user.fightPoint,
                     user.taken_damage,
                     `${(crit_rate * 100).toFixed(2)}%`,
                     `${(lucky_rate * 100).toFixed(2)}%`,
