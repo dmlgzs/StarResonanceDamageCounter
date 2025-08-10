@@ -10,7 +10,7 @@
     "node": "^22.0.0"
   },
   "scripts": {
-    "build": "pkg . -o dist/star-resonance-damage-counter.exe",
+    "build": "pkg .",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -35,12 +35,12 @@
   "pkg": {
     "scripts": "server.js",
     "assets": [
-      "views/**/*",
       "public/**/*",
       "node_modules/cap/**/*"
     ],
     "targets": [
       "node22-win-x64"
-    ]
+    ],
+    "outputPath": "dist"
   }
 }
