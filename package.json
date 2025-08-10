@@ -7,7 +7,7 @@
     "star-resonance-damage-counter": "server.js"
   },
   "engines": {
-    "node": "^20.0.0"
+    "node": "^22.0.0"
   },
   "scripts": {
     "build": "pkg . -o dist/star-resonance-damage-counter.exe",
@@ -39,7 +39,7 @@
       "node_modules/cap/**/*"
     ],
     "targets": [
-      "node20-win-x64"
+      "node22-win-x64"
     ]
   }
 }
