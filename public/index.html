@@ -2694,8 +2694,7 @@
             const damageTable = document.getElementById('damageTable');
             const damageTableRows = damageTable.querySelectorAll('tr');
             damageTableRows.forEach((row, index) => {
-                const prevRow = index > 0 ? damageTableRows[index - 1] : null;
-                const height = prevRow ? prevRow.offsetHeight : 0;
+                const height = row.offsetTop
                 row.style.setProperty('--th-top', `${index * height}px`);
             });
         }
