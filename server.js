@@ -2,12 +2,11 @@ const cap = require('cap');
 const cors = require('cors');
 const readline = require('readline');
 const winston = require("winston");
-const net = require('net');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
 const PacketProcessor = require('./algo/packet');
-const pb = require('./algo/pb');
 const Readable = require("stream").Readable;
 const Cap = cap.Cap;
 const decoders = cap.decoders;
@@ -20,6 +19,17 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 const devices = cap.deviceList();
+
+const elementMap = {
+        fire: '🔥火',
+        ice: '❄️冰',
+        thunder: '⚡雷',
+        earth: '🍀森',
+        wind: '💨风',
+        light: '✨光',
+        dark: '🌙暗',
+        physics: '⚔️'
+};
 
 function ask(question) {
     return new Promise(resolve => {
@@ -54,7 +64,9 @@ class Lock {
 
 // 通用统计类，用于处理伤害或治疗数据
 class StatisticData {
-    constructor() {
+    constructor(user, type) {
+        this.user = user;
+        this.type = type || '';
         this.stats = {
             normal: 0,
             critical: 0,
@@ -184,11 +196,13 @@ class StatisticData {
 class UserData {
     constructor(uid) {
         this.uid = uid;
-        this.damageStats = new StatisticData();
-        this.healingStats = new StatisticData();
+        this.name = '';
+        this.damageStats = new StatisticData(this, '伤害');
+        this.healingStats = new StatisticData(this, '治疗');
         this.takenDamage = 0; // 承伤
         this.profession = '未知';
         this.skillUsage = new Map(); // 技能使用情况
+        this.fightPoint = 0; // 总评分
     }
 
     /** 添加伤害记录
@@ -202,19 +216,26 @@ class UserData {
         this.damageStats.addRecord(damage, isCrit, isLucky, hpLessenValue);
         // 记录技能使用情况
         if (!this.skillUsage.has(skillId)) {
-            this.skillUsage.set(skillId, new StatisticData());
+            this.skillUsage.set(skillId, new StatisticData(this, '伤害'));
         }
         this.skillUsage.get(skillId).addRecord(damage, isCrit, isLucky, hpLessenValue);
         this.skillUsage.get(skillId).realtimeWindow.length = 0;
     }
 
     /** 添加治疗记录
+     * @param {number} skillId - 技能ID/Buff ID
      * @param {number} healing - 治疗值
      * @param {boolean} isCrit - 是否为暴击
      * @param {boolean} [isLucky] - 是否为幸运
      */
-    addHealing(healing, isCrit, isLucky) {
+    addHealing(skillId, healing, isCrit, isLucky) {
         this.healingStats.addRecord(healing, isCrit, isLucky);
+        // 记录技能使用情况
+        if (!this.skillUsage.has(skillId)) {
+            this.skillUsage.set(skillId, new StatisticData(this, '治疗'));
+        }
+        this.skillUsage.get(skillId).addRecord(healing, isCrit, isLucky);
+        this.skillUsage.get(skillId).realtimeWindow.length = 0;
     }
 
     /** 添加承伤记录
@@ -271,7 +292,55 @@ class UserData {
             total_healing: { ...this.healingStats.stats },
             taken_damage: this.takenDamage,
             profession: this.profession,
+            name: this.name,
+            fightPoint: this.fightPoint,
         };
+    }
+
+    /** 获取技能统计数据 */
+    getSkillSummary() {
+        const skills = {};
+        for (const [skillId, stat] of this.skillUsage) {
+            const total = stat.stats.normal + stat.stats.critical +
+                stat.stats.lucky + stat.stats.crit_lucky;
+            const critCount = stat.count.critical;
+            const luckyCount = stat.count.lucky;
+            const critRate = stat.count.total > 0 ? critCount / stat.count.total : 0;
+            const luckyRate = stat.count.total > 0 ? luckyCount / stat.count.total : 0;
+            const skillConfig = require('./skill_config.json').skills;
+            const cfg = skillConfig[skillId];
+            const name = cfg ? cfg.name : skillId;
+            const elementype = elementMap[cfg?.element] ?? "";
+
+            skills[skillId] = {
+                displayName: name,
+                type: stat.type,
+                elementype: elementype,
+                totalDamage: stat.stats.total,
+                totalCount: stat.count.total,
+                critCount: stat.count.critical,
+                luckyCount: stat.count.lucky,
+                critRate: critRate,
+                luckyRate: luckyRate,
+                damageBreakdown: { ...stat.stats },
+                countBreakdown: { ...stat.count }
+            };
+        }
+        return skills;
+    }
+
+    /** 设置姓名
+     * @param {string} name - 姓名
+     * */
+    setName(name) {
+        this.name = name;
+    }
+
+    /** 设置用户总评分
+     * @param {number} fightPoint - 总评分
+     */
+    setFightPoint(fightPoint) {
+        this.fightPoint = fightPoint;
     }
 
     /** 重置数据 预留 */
@@ -279,15 +348,77 @@ class UserData {
         this.damageStats.reset();
         this.healingStats.reset();
         this.takenDamage = 0;
-        this.profession = '未知';
         this.skillUsage.clear();
+        this.fightPoint = 0;
     }
 }
 
 // 用户数据管理器
 class UserDataManager {
-    constructor() {
+    constructor(logger) {
+        this.logger = logger
         this.users = new Map();
+        this.userCache = new Map(); // 用户名字和职业缓存
+        this.cacheFilePath = './users.json';
+        this.loadUserCache();
+
+        // 节流相关配置
+        this.saveThrottleDelay = 2000; // 2秒节流延迟，避免频繁磁盘写入
+        this.saveThrottleTimer = null;
+        this.pendingSave = false;
+    }
+
+    /** 加载用户缓存 */
+    loadUserCache() {
+        try {
+            if (fs.existsSync(this.cacheFilePath)) {
+                const data = fs.readFileSync(this.cacheFilePath, 'utf8');
+                const cacheData = JSON.parse(data);
+                this.userCache = new Map(Object.entries(cacheData));
+                this.logger.info(`Loaded ${this.userCache.size} user cache entries`);
+            }
+        } catch (error) {
+            this.logger.error('Failed to load user cache:', error);
+        }
+    }
+
+    /** 保存用户缓存 */
+    saveUserCache() {
+        try {
+            const cacheData = Object.fromEntries(this.userCache);
+            fs.writeFileSync(this.cacheFilePath, JSON.stringify(cacheData, null, 2), 'utf8');
+        } catch (error) {
+            this.logger.error('Failed to save user cache:', error);
+        }
+    }
+
+    /** 节流保存用户缓存 - 减少频繁的磁盘写入 */
+    saveUserCacheThrottled() {
+        this.pendingSave = true;
+
+        if (this.saveThrottleTimer) {
+            clearTimeout(this.saveThrottleTimer);
+        }
+
+        this.saveThrottleTimer = setTimeout(() => {
+            if (this.pendingSave) {
+                this.saveUserCache();
+                this.pendingSave = false;
+                this.saveThrottleTimer = null;
+            }
+        }, this.saveThrottleDelay);
+    }
+
+    /** 强制立即保存用户缓存 - 用于程序退出等场景 */
+    forceUserCacheSave() {
+        if (this.saveThrottleTimer) {
+            clearTimeout(this.saveThrottleTimer);
+            this.saveThrottleTimer = null;
+        }
+        if (this.pendingSave) {
+            this.saveUserCache();
+            this.pendingSave = false;
+        }
     }
 
     /** 获取或创建用户记录
@@ -296,7 +427,20 @@ class UserDataManager {
      */
     getUser(uid) {
         if (!this.users.has(uid)) {
-            this.users.set(uid, new UserData(uid));
+            const user = new UserData(uid);
+
+            // 从缓存中设置名字和职业
+            const cachedData = this.userCache.get(String(uid));
+            if (cachedData) {
+                if (cachedData.name) {
+                    user.setName(cachedData.name);
+                }
+                if (cachedData.profession) {
+                    user.setProfession(cachedData.profession);
+                }
+            }
+
+            this.users.set(uid, user);
         }
         return this.users.get(uid);
     }
@@ -316,13 +460,14 @@ class UserDataManager {
 
     /** 添加治疗记录
      * @param {number} uid - 进行治疗的用户ID
+     * @param {number} skillId - 技能ID/Buff ID
      * @param {number} healing - 治疗值
      * @param {boolean} isCrit - 是否为暴击
      * @param {boolean} [isLucky] - 是否为幸运
      */
-    addHealing(uid, healing, isCrit, isLucky) {
+    addHealing(uid, skillId, healing, isCrit, isLucky) {
         const user = this.getUser(uid);
-        user.addHealing(healing, isCrit, isLucky);
+        user.addHealing(skillId, healing, isCrit, isLucky);
     }
 
     /** 添加承伤记录
@@ -340,7 +485,50 @@ class UserDataManager {
      * */
     setProfession(uid, profession) {
         const user = this.getUser(uid);
-        user.setProfession(profession);
+        if (user.profession !== profession) {
+            user.setProfession(profession);
+            this.logger.info(`Found profession ${profession} for uid ${uid}`);
+
+            // 更新缓存
+            const uidStr = String(uid);
+            if (!this.userCache.has(uidStr)) {
+                this.userCache.set(uidStr, {});
+            }
+            this.userCache.get(uidStr).profession = profession;
+            this.saveUserCacheThrottled();
+        }
+    }
+
+    /** 设置用户姓名
+     * @param {number} uid - 用户ID
+     * @param {string} name - 姓名
+     * */
+    setName(uid, name) {
+        const user = this.getUser(uid);
+        if (user.name !== name) {
+            user.setName(name);
+            this.logger.info(`Found player name ${name} for uid ${uid}`);
+
+            // 更新缓存
+            const uidStr = String(uid);
+            if (!this.userCache.has(uidStr)) {
+                this.userCache.set(uidStr, {});
+            }
+            this.userCache.get(uidStr).name = name;
+            this.saveUserCacheThrottled();
+        }
+    }
+
+    /** 设置用户总评分
+     * @param {number} uid - 用户ID
+     * @param {number} fightPoint - 总评分
+    */
+    setFightPoint(uid, fightPoint) {
+        const user = this.getUser(uid);
+        if (user.fightPoint != fightPoint) {
+            user.setFightPoint(fightPoint);
+            this.logger.info(`Found fight point ${fightPoint} for uid ${uid}`);
+        }
     }
 
     /** 更新所有用户的实时DPS和HPS */
@@ -348,6 +536,19 @@ class UserDataManager {
         for (const user of this.users.values()) {
             user.updateRealtimeDps();
         }
+    }
+
+    /** 获取用户的技能数据 */
+    getUserSkillData(uid) {
+        const user = this.users.get(uid);
+        if (!user) return null;
+
+        return {
+            uid: user.uid,
+            name: user.name,
+            profession: user.profession,
+            skills: user.getSkillSummary()
+        };
     }
 
     /** 获取所有用户数据 */
@@ -370,14 +571,12 @@ class UserDataManager {
     }
 }
 
-const userDataManager = new UserDataManager();
-
 // 暂停统计状态
 let isPaused = false;
 
 async function main() {
     print('Welcome to use Damage Counter for Star Resonance!');
-    print('Version: V2.2.1');
+    print('Version: V2.2.2');
     print('GitHub: https://github.com/dmlgzs/StarResonanceDamageCounter');
     for (let i = 0; i < devices.length; i++) {
         print(i + '.\t' + devices[i].description);
@@ -423,6 +622,21 @@ async function main() {
         transports: [
             new winston.transports.Console()
         ]
+    });
+
+    const userDataManager = new UserDataManager(logger);
+
+    // 进程退出时保存用户缓存
+    process.on('SIGINT', () => {
+        console.log('\nSaving user cache...');
+        userDataManager.forceUserCacheSave();
+        process.exit(0);
+    });
+
+    process.on('SIGTERM', () => {
+        console.log('\nSaving user cache...');
+        userDataManager.forceUserCacheSave();
+        process.exit(0);
     });
 
     //瞬时DPS更新
@@ -481,10 +695,28 @@ async function main() {
         });
     });
 
+    // 获取技能数据
+    app.get('/api/skill/:uid', (req, res) => {
+        const uid = parseInt(req.params.uid);
+        const skillData = userDataManager.getUserSkillData(uid);
+
+        if (!skillData) {
+            return res.status(404).json({
+                code: 1,
+                msg: 'User not found'
+            });
+        }
+
+        res.json({
+            code: 0,
+            data: skillData
+        });
+    });
+
     // WebSocket 连接处理
     io.on('connection', (socket) => {
         logger.info('WebSocket client connected: ' + socket.id);
-        
+
         socket.on('disconnect', () => {
             logger.info('WebSocket client disconnected: ' + socket.id);
         });
@@ -513,8 +745,7 @@ async function main() {
     let current_server = '';
     let _data = Buffer.alloc(0);
     let tcp_next_seq = -1;
-    let tcp_cache = {};
-    let tcp_cache_size = 0;
+    let tcp_cache = new Map();
     let tcp_last_time = 0;
     const tcp_lock = new Lock();
 
@@ -522,9 +753,76 @@ async function main() {
         _data = Buffer.alloc(0);
         tcp_next_seq = -1;
         tcp_last_time = 0;
-        tcp_cache = {};
-        tcp_cache_size = 0;
-    }
+        tcp_cache.clear();
+    };
+
+    const fragmentIpCache = new Map();
+    const FRAGMENT_TIMEOUT = 30000;
+    const getTCPPacket = (frameBuffer, ethOffset) => {
+        const ipPacket = decoders.IPV4(frameBuffer, ethOffset);
+        const ipId = ipPacket.info.id;
+        const isFragment = (ipPacket.info.flags & 0x1) !== 0;
+        const _key = `${ipId}-${ipPacket.info.srcaddr}-${ipPacket.info.dstaddr}-${ipPacket.info.protocol}`;
+        const now = Date.now();
+
+        if (isFragment || ipPacket.info.fragoffset > 0) {
+            if (!fragmentIpCache.has(_key)) {
+                fragmentIpCache.set(_key, {
+                    fragments: [],
+                    timestamp: now
+                });
+            }
+
+            const cacheEntry = fragmentIpCache.get(_key);
+            const ipBuffer = Buffer.from(frameBuffer.subarray(ethOffset));
+            cacheEntry.fragments.push(ipBuffer);
+            cacheEntry.timestamp = now;
+
+            // there's more fragment ip packetm, wait for the rest
+            if (isFragment) {
+                return null;
+            }
+
+            // last fragment received, reassemble
+            const fragments = cacheEntry.fragments;
+            if (!fragments) {
+                logger.error(`Can't find fragments for ${_key}`);
+                return null;
+            }
+
+            // Reassemble fragments based on their offset
+            let totalLength = 0;
+            const fragmentData = [];
+
+            // Collect fragment data with their offsets
+            for (const buffer of fragments) {
+                const ip = decoders.IPV4(buffer);
+                const fragmentOffset = ip.info.fragoffset * 8;
+                const payloadLength = ip.info.totallen - ip.hdrlen;
+                const payload = Buffer.from(buffer.subarray(ip.offset, ip.offset + payloadLength));
+
+                fragmentData.push({
+                    offset: fragmentOffset,
+                    payload: payload
+                });
+
+                const endOffset = fragmentOffset + payloadLength;
+                if (endOffset > totalLength) {
+                    totalLength = endOffset;
+                }
+            }
+
+            const fullPayload = Buffer.alloc(totalLength);
+            for (const fragment of fragmentData) {
+                fragment.payload.copy(fullPayload, fragment.offset);
+            }
+
+            fragmentIpCache.delete(_key);
+            return fullPayload;
+        }
+
+        return Buffer.from(frameBuffer.subarray(ipPacket.offset, ipPacket.offset + (ipPacket.info.totallen - ipPacket.hdrlen)));
+    };
 
     //抓包相关
     const c = new Cap();
@@ -534,113 +832,141 @@ async function main() {
     const buffer = Buffer.alloc(65535);
     const linkType = c.open(device, filter, bufSize, buffer);
     c.setMinBytes && c.setMinBytes(0);
-    c.on('packet', async function (nbytes, trunc) {
-        const buffer1 = Buffer.from(buffer);
-        if (linkType === 'ETHERNET') {
-            var ret = decoders.Ethernet(buffer1);
-            if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
-                ret = decoders.IPV4(buffer1, ret.offset);
-                //logger.debug('from: ' + ret.info.srcaddr + ' to ' + ret.info.dstaddr);
-                const srcaddr = ret.info.srcaddr;
-                const dstaddr = ret.info.dstaddr;
+    c.on("packet", async function (nbytes, trunc) {
+        // logger.debug('packet: length ' + nbytes + ' bytes, truncated? ' + (trunc ? 'yes' : 'no'));
+        if (linkType !== "ETHERNET") return;
 
-                if (ret.info.protocol === PROTOCOL.IP.TCP) {
-                    var datalen = ret.info.totallen - ret.hdrlen;
+        const frameBuffer = Buffer.from(buffer);
+        var ethPacket = decoders.Ethernet(frameBuffer);
 
-                    ret = decoders.TCP(buffer1, ret.offset);
-                    //logger.debug(' from port: ' + ret.info.srcport + ' to port: ' + ret.info.dstport);
-                    const srcport = ret.info.srcport;
-                    const dstport = ret.info.dstport;
-                    const src_server = srcaddr + ':' + srcport + ' -> ' + dstaddr + ':' + dstport;
-                    datalen -= ret.hdrlen;
-                    let buf = Buffer.from(buffer1.subarray(ret.offset, ret.offset + datalen));
+        if (ethPacket.info.type !== PROTOCOL.ETHERNET.IPV4) return;
 
-                    if (tcp_last_time && Date.now() - tcp_last_time > 30000) {
-                        logger.warn('Cannot capture the next packet! Is the game closed or disconnected? seq: ' + tcp_next_seq);
-                        current_server = '';
-                        clearTcpCache();
-                    }
+        const ipPacket = decoders.IPV4(frameBuffer, ethPacket.offset);
+        const srcaddr = ipPacket.info.srcaddr;
+        const dstaddr = ipPacket.info.dstaddr;
 
-                    if (current_server !== src_server) {
-                        try {
-                            //尝试通过小包识别服务器
-                            if (buf[4] == 0) {
-                                const data = buf.subarray(10);
-                                if (data.length) {
-                                    const stream = Readable.from(data, { objectMode: false });
-                                    let data1;
-                                    do {
-                                        const len_buf = stream.read(4);
-                                        if (!len_buf) break;
-                                        data1 = stream.read(len_buf.readUInt32BE() - 4);
-                                        const signature = Buffer.from([0x00, 0x63, 0x33, 0x53, 0x42, 0x00]); //c3SB??
-                                        if (Buffer.compare(data1.subarray(5, 5 + signature.length), signature)) break;
-                                        try {
-                                            let body = pb.decode(data1.subarray(18)) || {};
-                                            if (current_server !== src_server) {
-                                                current_server = src_server;
-                                                clearTcpCache();
-                                                logger.info('Got Scene Server Address: ' + src_server);
-                                            }
-                                        } catch (e) { }
-                                    } while (data1 && data1.length)
+        const tcpBuffer = getTCPPacket(frameBuffer, ethPacket.offset);
+        if (tcpBuffer === null) return;
+        const tcpPacket = decoders.TCP(tcpBuffer);
+
+        const buf = Buffer.from(tcpBuffer.subarray(tcpPacket.hdrlen));
+
+        //logger.debug(' from port: ' + tcpPacket.info.srcport + ' to port: ' + tcpPacket.info.dstport);
+        const srcport = tcpPacket.info.srcport;
+        const dstport = tcpPacket.info.dstport;
+        const src_server = srcaddr + ":" + srcport + " -> " + dstaddr + ":" + dstport;
+
+        await tcp_lock.acquire();
+        if (current_server !== src_server) {
+            try {
+                //尝试通过小包识别服务器
+                if (buf[4] == 0) {
+                    const data = buf.subarray(10);
+                    if (data.length) {
+                        const stream = Readable.from(data, { objectMode: false });
+                        let data1;
+                        do {
+                            const len_buf = stream.read(4);
+                            if (!len_buf) break;
+                            data1 = stream.read(len_buf.readUInt32BE() - 4);
+                            const signature = Buffer.from([0x00, 0x63, 0x33, 0x53, 0x42, 0x00]); //c3SB??
+                            if (Buffer.compare(data1.subarray(5, 5 + signature.length), signature)) break;
+                            try {
+                                if (current_server !== src_server) {
+                                    current_server = src_server;
+                                    clearTcpCache();
+                                    tcp_next_seq = tcpPacket.info.seqno + buf.length;
+                                    logger.info("Got Scene Server Address: " + src_server);
                                 }
-                            }
-                        } catch (e) { }
-                        return;
+                            } catch (e) { }
+                        } while (data1 && data1.length);
                     }
-                    //这里已经是识别到的服务器的包了
-                    await tcp_lock.acquire();
-                    if (tcp_next_seq === -1 && buf.length > 4 && buf.readUInt32BE() < 999999) { //第一次抓包可能抓到后半段的，先丢了
-                        tcp_next_seq = ret.info.seqno;
-                    }
-                    // logger.debug('TCP next seq: ' + tcp_next_seq);
-                    tcp_cache[ret.info.seqno] = buf;
-                    tcp_cache_size++;
-                    while (tcp_cache[tcp_next_seq]) {
-                        const seq = tcp_next_seq;
-                        _data = _data.length === 0 ? tcp_cache[seq] : Buffer.concat([_data, tcp_cache[seq]]);
-                        tcp_next_seq = (seq + tcp_cache[seq].length) >>> 0; //uint32
-                        tcp_cache[seq] = undefined;
-                        tcp_cache_size--;
-                        tcp_last_time = Date.now();
-                        setTimeout(() => {
-                            if (tcp_cache[seq]) {
-                                tcp_cache[seq] = undefined;
-                                tcp_cache_size--;
-                            }
-                        }, 10000);
-                    }
-                    /*
-                    if (tcp_cache_size > 30) {
-                        logger.warn('Too much unused tcp cache! Is the game reconnected? seq: ' + tcp_next_seq + ' size:' + tcp_cache_size);
-                        clearTcpCache();
-                    }
-                    */
-
-                    while (_data.length > 4) {
-                        let packetSize = _data.readUInt32BE();
-
-                        if (_data.length < packetSize) break;
-
-                        if (_data.length >= packetSize) {
-                            const packet = _data.subarray(0, packetSize);
-                            _data = _data.subarray(packetSize);
-                            const processor = new PacketProcessor({ logger, userDataManager });
-                            if (!isPaused) processor.processPacket(packet);
-                        } else if (packetSize > 999999) {
-                            logger.error(`Invalid Length!! ${_data.length},${len},${_data.toString('hex')},${tcp_next_seq}`);
-                            process.exit(1);
-                            break;
+                }
+                //尝试通过登录返回包识别服务器(仍需测试)
+                if (buf.length === 0x62) {
+                    // prettier-ignore
+                    const signature = Buffer.from([
+                        0x00, 0x00, 0x00, 0x62,
+                        0x00, 0x03,
+                        0x00, 0x00, 0x00, 0x01,
+                        0x00, 0x11, 0x45, 0x14,//seq?
+                        0x00, 0x00, 0x00, 0x00,
+                        0x0a, 0x4e, 0x08, 0x01, 0x22, 0x24
+                    ]);
+                    if (Buffer.compare(buf.subarray(0, 10), signature.subarray(0, 10)) === 0 &&
+                        Buffer.compare(buf.subarray(14, 14 + 6), signature.subarray(14, 14 + 6)) === 0) {
+                        if (current_server !== src_server) {
+                            current_server = src_server;
+                            clearTcpCache();
+                            tcp_next_seq = tcpPacket.info.seqno + buf.length;
+                            logger.info("Got Scene Server Address by Login Return Packet: " + src_server);
                         }
                     }
-                    tcp_lock.release();
-                } else
-                    logger.error('Unsupported IPv4 protocol: ' + PROTOCOL.IP[ret.info.protocol]);
-            } else
-                logger.error('Unsupported Ethertype: ' + PROTOCOL.ETHERNET[ret.info.type]);
+                }
+            } catch (e) { }
+            tcp_lock.release();
+            return;
         }
-    })
+        // logger.debug(`packet seq ${tcpPacket.info.seqno >>> 0} size ${buf.length} expected next seq ${((tcpPacket.info.seqno >>> 0) + buf.length) >>> 0}`);
+        //这里已经是识别到的服务器的包了
+        if (tcp_next_seq === -1) {
+            logger.error("Unexpected TCP capture error! tcp_next_seq is -1");
+            if (buf.length > 4 && buf.readUInt32BE() < 0x0fffff) {
+                tcp_next_seq = tcpPacket.info.seqno;
+            }
+        }
+        // logger.debug('TCP next seq: ' + tcp_next_seq);
+        if (((tcp_next_seq - tcpPacket.info.seqno) << 0) <= 0 || tcp_next_seq === -1) {
+            tcp_cache.set(tcpPacket.info.seqno, buf);
+        }
+        while (tcp_cache.has(tcp_next_seq)) {
+            const seq = tcp_next_seq;
+            const cachedTcpData = tcp_cache.get(seq);
+            _data = _data.length === 0 ? cachedTcpData : Buffer.concat([_data, cachedTcpData]);
+            tcp_next_seq = (seq + cachedTcpData.length) >>> 0; //uint32
+            tcp_cache.delete(seq);
+            tcp_last_time = Date.now();
+        }
+
+        while (_data.length > 4) {
+            let packetSize = _data.readUInt32BE();
+
+            if (_data.length < packetSize) break;
+
+            if (_data.length >= packetSize) {
+                const packet = _data.subarray(0, packetSize);
+                _data = _data.subarray(packetSize);
+                const processor = new PacketProcessor({ logger, userDataManager });
+                if (!isPaused) processor.processPacket(packet);
+            } else if (packetSize > 0x0fffff) {
+                logger.error(`Invalid Length!! ${_data.length},${len},${_data.toString("hex")},${tcp_next_seq}`);
+                process.exit(1);
+                break;
+            }
+        }
+        tcp_lock.release();
+    });
+
+    //定时清理过期的IP分片缓存
+    setInterval(async () => {
+        const now = Date.now();
+        let clearedFragments = 0;
+        for (const [key, cacheEntry] of fragmentIpCache) {
+            if (now - cacheEntry.timestamp > FRAGMENT_TIMEOUT) {
+                fragmentIpCache.delete(key);
+                clearedFragments++;
+            }
+        }
+        if (clearedFragments > 0) {
+            logger.debug(`Cleared ${clearedFragments} expired IP fragment caches`);
+        }
+
+        if (tcp_last_time && Date.now() - tcp_last_time > FRAGMENT_TIMEOUT) {
+            logger.warn("Cannot capture the next packet! Is the game closed or disconnected? seq: " + tcp_next_seq);
+            current_server = "";
+            clearTcpCache();
+        }
+    }, 10000);
 }
 
 main();

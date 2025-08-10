@@ -10,7 +10,6 @@
         body {
             font-family: "Segoe UI", sans-serif;
             background-color: #f8f9fa;
-            background-image: url('./background.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -34,7 +33,6 @@
         }
 
         button {
-            margin: 20px 0;
             padding: 10px 20px;
             font-size: 16px;
             border-radius: 8px;
@@ -54,7 +52,7 @@
         }
 
         .card {
-            max-width: 1200px;
+            max-width: 85vw;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
@@ -64,10 +62,42 @@
             transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
         }
 
+        /* 表格容器样式 */
+        .table-container {
+            position: relative;
+            max-height: max(70vh,40rem);
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            /* 自定义滚动条样式 */
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+        /* Webkit浏览器的滚动条样式 */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
         table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 0;
         }
 
         th {
@@ -75,6 +105,11 @@
             color: white;
             font-weight: bold;
             transition: background-color 0.3s ease;
+            position: sticky;
+            top: var(--th-top);
+            z-index: 10;
+            border-bottom: 2px solid #3498db;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         td,
@@ -90,25 +125,9 @@
             transition: background-color 0.3s ease;
         }
 
-        .watermark {
-            pointer-events: none;
-            position: fixed;
-            top: -100vh;
-            left: -100vw;
-            width: 300vw;
-            height: 300vh;
-            z-index: 9999;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" opacity="0.05"><text x="0" y="20" font-size="20">数据仅供参考</text></svg>');
-            display: flex;
-            transform: rotate(-30deg);
-            user-select: none;
-            transition: background-image 0.3s ease;
-        }
-
         /* 夜间模式样式 */
         .dark-mode {
             background-color: #1a1a1a !important;
-            background-image: url('./background.png') !important;
             background-size: cover !important;
             background-position: center !important;
             background-repeat: no-repeat !important;
@@ -130,28 +149,48 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
         }
 
+        .dark-mode table {
+            background-color: #2d2d2d !important;
+        }
+
+        .dark-mode .table-container {
+            border-color: #555 !important;
+            scrollbar-color: #555 #2d2d2d;
+        }
+
+        .dark-mode .table-container::-webkit-scrollbar-track {
+            background: #2d2d2d !important;
+        }
+
+        .dark-mode .table-container::-webkit-scrollbar-thumb {
+            background: #555 !important;
+        }
+
+        .dark-mode .table-container::-webkit-scrollbar-thumb:hover {
+            background: #666 !important;
+        }
+
         .dark-mode th {
             background-color: #1976d2 !important;
+            border-bottom: 2px solid #1976d2 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+            border-color: #555 !important;
         }
 
         .dark-mode tr:nth-child(even) {
             background-color: #383838 !important;
         }
 
-        .dark-mode button {
+        .dark-mode .main-button {
             background-color: #424242 !important;
             color: #e0e0e0 !important;
         }
 
-        .dark-mode button:hover {
+        .dark-mode .main-button:hover {
             background-color: #616161 !important;
         }
 
         .dark-mode td {
-            border-color: #555 !important;
-        }
-
-        .dark-mode th {
             border-color: #555 !important;
         }
 
@@ -161,10 +200,6 @@
 
         .dark-mode footer a {
             color: #4fc3f7 !important;
-        }
-
-        .dark-mode .watermark {
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" opacity="0.08"><text x="0" y="20" font-size="20" fill="white">数据仅供参考</text></svg>') !important;
         }
 
         .dark-mode select {
@@ -179,7 +214,7 @@
 
         /* 图表容器样式 */
         .chart-container {
-            max-width: 1200px;
+            max-width: 85vw;
             margin: 20px auto;
             background: white;
             border-radius: 16px;
@@ -240,20 +275,476 @@
             color: #aaa;
         }
 
-        .controls-panel {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
         }
 
-        .dark-mode .controls-panel {
-            background: #2d2d2d !important;
-            color: #e0e0e0 !important;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-header {
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: white;
+        }
+
+        .close-button {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #f0f0f0;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* 夜间模式下的弹窗样式 */
+        .dark-mode .modal-content {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .modal-header {
+            background-color: #1976d2;
+        }
+
+        /* 新增技能按钮样式 */
+        .skill-btn {
+            padding: 6px 12px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .skill-btn:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 复制按钮样式 */
+        .copy-btn {
+            padding: 6px 12px;
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .copy-btn:hover {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 操作按钮容器样式 */
+        .operation-div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        /* 技能统计弹窗样式 */
+        .skill-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .skill-modal-content {
+            background-color: #2d3748;
+            margin: 5% auto;
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 1000px;
+            max-height: 85vh;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .skill-modal-header {
+            background: linear-gradient(45deg, #2c3e50, #1a2a6c);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        
+        .skill-modal-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .skill-modal-close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+        }
+        
+        .skill-modal-close:hover {
+            color: #ff6b6b;
+        }
+        
+        .skill-modal-body {
+            padding: 25px;
+            max-height: calc(85vh - 110px); 
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        
+        .skill-user-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .skill-user-info-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .skill-user-info-label {
+            color: #a0aec0;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .skill-user-info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        
+        .skill-stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+        }
+        
+        .skill-chart-container {
+            height: 350px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .skill-table-container {
+            overflow-x: auto;
+        }
+        
+        .skill-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .skill-table th {
+            background-color: #1976d2 !important;
+            border-bottom: 2px solid #1976d2 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+            border-color: #555 !important;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .skill-table td {
+            border-color: #555 !important;
+        }
+
+        
+        .skill-table table {
+            background-color: #2d2d2d !important;
+        }
+
+        .skill-table .table-container {
+            border-color: #555 !important;
+            scrollbar-color: #555 #2d2d2d;
+        }
+
+        .skill-table tr {
+            background-color: #1a1a1a;
+        }
+
+        .skill-table tr:nth-child(even) {
+            background-color: #383838 !important;
+        }
+
+        .skill-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #cbd5e0;
+        }
+        
+        .skill-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .skill-table tr:hover td {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .skill-crit {
+            color: #ff9966;
+            font-weight: 600;
+        }
+        
+        .skill-lucky {
+            color: #93f9b9;
+            font-weight: 600;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .progress-damage {
+            background: linear-gradient(90deg, #ff5e62, #ff9966);
+        }
+        
+        .progress-crit {
+            background: linear-gradient(90deg, #ff9966, #ffcc00);
+        }
+        
+        .progress-lucky {
+            background: linear-gradient(90deg, #93f9b9, #1d976c);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 移动设备响应式设计 */
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 2% auto;
+                width: 95%;
+                max-height: 90vh;
+            }
+            
+            .modal-header {
+                padding: 15px;
+            }
+            
+            .modal-body {
+                padding: 15px;
+            }
+            
+            #userControlsList {
+                max-height: 300px;
+                gap: 8px;
+            }
+            
+            .user-controls {
+                flex-direction: column;
+                gap: 5px;
+                padding: 8px;
+            }
+            
+            .user-nickname-input {
+                width: 80px;
+            }
+            
+            /* 移动设备表格优化 */
+            .table-container {
+                max-height: max(60vh,40rem);
+                font-size: 12px;
+            }
+            
+            .table-container th,
+            .table-container td {
+                padding: 6px 4px;
+                font-size: 11px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+        }
+
+        /* 弹窗动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 服务器状态提示样式 */
+        .server-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10001;
+            transition: all 0.3s ease;
+            transform: translateX(100%);
+            opacity: 0;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .server-status.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .server-status.connected {
+            background-color: #4CAF50;
+            color: white;
+            border-left: 4px solid #45a049;
+        }
+
+        .server-status.disconnected {
+            background-color: #f44336;
+            color: white;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .server-status.reconnecting {
+            background-color: #ff9800;
+            color: white;
+            border-left: 4px solid #f57c00;
+        }
+
+        .server-status.api-mode {
+            background-color: #2196F3;
+            color: white;
+            border-left: 4px solid #1976D2;
+        }
+
+        /* 夜间模式下的服务器状态提示 */
+        .dark-mode .server-status {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .server-status.connected {
+            background-color: #388E3C;
+            border-left-color: #2E7D32;
+        }
+
+        .dark-mode .server-status.disconnected {
+            background-color: #D32F2F;
+            border-left-color: #C62828;
+        }
+
+        .dark-mode .server-status.reconnecting {
+            background-color: #F57C00;
+            border-left-color: #EF6C00;
+        }
+
+        .dark-mode .server-status.api-mode {
+            background-color: #1976D2;
+            border-left-color: #1565C0;
+        }
+
+        /* 移动设备响应式 */
+        @media (max-width: 768px) {
+            .server-status {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 13px;
+                padding: 10px 15px;
+            }
         }
 
         /* 简洁模式样式 */
@@ -271,11 +762,79 @@
         .simple-mode .healing-simple-col {
             display: table-cell !important;
         }
+
+        /* 数据组折叠样式 */
+        .hide-damage .damage-cols,
+        .hide-damage .dps-col,
+        .hide-damage .dps-cols,
+        .hide-damage .damage-main-col,
+        .hide-damage .damage-simple-col,
+        .hide-damage .damage-detail-cols {
+            display: none !important;
+        }
+
+        .hide-healing .healing-cols,
+        .hide-healing .hps-col,
+        .hide-healing .hps-cols,
+        .hide-healing .healing-main-col,
+        .hide-healing .healing-simple-col,
+        .hide-healing .healing-detail-cols {
+            display: none !important;
+        }
+
+        /* 数据组切换按钮样式 */
+        .data-group-controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .data-group-button {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: 2px solid #3498db;
+            background-color: white;
+            color: #3498db;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .data-group-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .data-group-button:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            color: white;
+        }
+
+        .dark-mode .data-group-button {
+            background-color: #2d2d2d;
+            color: #3498db;
+            border-color: #3498db;
+        }
+
+        .dark-mode .data-group-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .dark-mode .data-group-button:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            color: white;
+        }
     </style>
 </head>
 
 <body>
-    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2.1</h1>
+    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2.2</h1>
     <div style="margin: 20px 0;">
         <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
         <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
@@ -289,20 +848,93 @@
             <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
         </select>
     </div>
-    <button onclick="clearData()">✨ 清空统计数据</button>
-    <button id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
-    <button onclick="toggleDarkMode()">🌙 夜间模式</button>
-    <button onclick="toggleSimpleMode()">📋 简洁模式</button>
+    <button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
+    <button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
+    <button class="main-button" onclick="toggleDarkMode()">🌙 夜间模式</button>
+    <button class="main-button" onclick="toggleSimpleMode()">📋 简洁模式</button>
+    <button class="main-button" onclick="toggleControlsModal()">⚙️ 用户设置</button>
 
-    <!-- 控制面板 -->
-    <div class="controls-panel">
-        <div style="margin-bottom: 15px;">
-            <button onclick="toggleAllUsers()">🔄 全选/取消全选</button>
-            <button onclick="clearNicknames()">🗑️ 清空所有昵称</button>
+    <!-- 控制面板弹窗 -->
+    <div id="controlsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>⚙️ 用户控制面板</span>
+                <span class="close-button" onclick="toggleControlsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px; text-align: center;">
+                    <button onclick="toggleAllUsers()">🔄 全选/取消全选</button>
+                    <button onclick="clearNicknames()">🗑️ 清空所有昵称</button>
+                </div>
+                <div id="userControlsList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-height: 400px; overflow-y: auto;">
+                    <!-- 用户控制项将在这里动态生成 -->
+                </div>
+            </div>
         </div>
-        <div id="userControlsList" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-            <!-- 用户控制项将在这里动态生成 -->
+    </div>
+
+    <!-- 技能统计弹窗 -->
+    <div id="skillModal" class="skill-modal">
+        <div class="skill-modal-content">
+            <div class="skill-modal-header">
+                <h2 class="skill-modal-title">
+                    <i class="icon">📊</i> 
+                    <span id="skillUserName">技能参与统计</span>
+                </h2>
+                <span class="skill-modal-close" onclick="closeSkillModal()">&times;</span>
+            </div>
+            <div class="skill-modal-body">
+                <div class="skill-user-info">
+                    <div class="skill-user-info-item">
+                        <div class="skill-user-info-label">用户ID</div>
+                        <div class="skill-user-info-value" id="skillUserId">-</div>
+                    </div>
+                    <div class="skill-user-info-item">
+                        <div class="skill-user-info-label">角色昵称</div>
+                        <div class="skill-user-info-value" id="skillUserNickname">-</div>
+                    </div>
+                    <div class="skill-user-info-item">
+                        <div class="skill-user-info-label">职业</div>
+                        <div class="skill-user-info-value" id="skillUserProfession">-</div>
+                    </div>
+                    <div class="skill-user-info-item">
+                        <div class="skill-user-info-label">技能数量</div>
+                        <div class="skill-user-info-value" id="skillCount">-</div>
+                    </div>
+                </div>
+                
+                <div class="skill-stats-container">
+                    <div class="skill-chart-container" id="skillDamageChart"></div>
+                    <div class="skill-chart-container" id="skillCritChart"></div>
+                </div>
+                
+                <div class="skill-table-container">
+                    <table class="skill-table" id="skillTable">
+                        <thead>
+                            <tr>
+                                <th>技能ID</th>
+                                <th>类型</th>
+                                <th>元素</th>
+                                <th>总数值</th>
+                                <th>使用次数</th>
+                                <th>暴击率</th>
+                                <th>幸运率</th>
+                                <th>暴击数值</th>
+                                <th>幸运数值</th>
+                                <th>暴击幸运</th>
+                                <th>普通数值</th>
+                            </tr>
+                        </thead>
+                        <tbody id="skillTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <!-- 服务器状态提示 -->
+    <div id="serverStatus" class="server-status">
+        <span id="serverStatusText">连接中...</span>
     </div>
 
     <!-- DPS折线图 -->
@@ -314,44 +946,58 @@
         <div id="dpsChart" style="width: 100%; height: 350px;"></div>
     </div>
 
-    <div class="card">
-        <table id="damageTable">
-            <thead>
-                <tr>
-                    <th rowspan="2" title="角色唯一标识符/自定义昵称">角色昵称</th>
-                    <th rowspan="2" title="角色职业">职业</th>
-                    <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
-                    <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
-                    <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
-                    <th class="damage-main-col" colspan="4">伤害</th>
-                    <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
-                    <th colspan="3">DPS</th>
-                    <th class="healing-main-col" colspan="4">治疗</th>
-                    <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
-                    <th colspan="3">HPS</th>
-                </tr>
-                <tr>
-                    <th title="角色在战斗中造成的总伤害">总伤害</th>
-                    <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
-                    <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
-                    <th class="damage-detail-cols" title="角色在战斗中造成的暴击的幸运伤害">暴击幸运</th>
-                    <th title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
-                    <th title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
-                    <th title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
-                    <th title="角色在战斗中造成的总治疗量">总治疗</th>
-                    <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
-                    <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
-                    <th class="healing-detail-cols" title="角色在战斗中造成的暴击的幸运治疗量">暴击幸运</th>
-                    <th title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时HPS</th>
-                    <th title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
-                    <th title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <div class="watermark"></div>
+            <div class="card">
+            <!-- 数据组显示控制 -->
+            <div class="data-group-controls">
+                <button id="damageGroupBtn" class="data-group-button active" onclick="toggleDataGroup('damage')">
+                    ⚔️ 伤害&DPS
+                </button>
+                <button id="healingGroupBtn" class="data-group-button" onclick="toggleDataGroup('healing')">
+                    ❤️ 治疗&HPS
+                </button>
+                <button id="allGroupBtn" class="data-group-button" onclick="toggleDataGroup('all')">
+                    📊 全部数据
+                </button>
+            </div>
+            <div class="table-container">
+                <table id="damageTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" title="角色唯一标识符">角色ID</th>
+                            <th rowspan="2" title="角色昵称/自定义昵称">角色昵称</th>
+                            <th rowspan="2" title="角色职业">职业</th>
+                            <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
+                            <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
+                            <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
+                            <th class="damage-main-col" colspan="4">伤害</th>
+                            <th class="damage-simple-col" style="display: none;" colspan="1">伤害</th>
+                            <th class="dps-col" colspan="3">DPS</th>
+                            <th class="healing-main-col" colspan="4">治疗</th>
+                            <th class="healing-simple-col" style="display: none;" colspan="1">治疗</th>
+                            <th class="hps-col" colspan="3">HPS</th>
+                            <th rowspan="2">操作</th>
+                        </tr>
+                        <tr>
+                            <th class="damage-cols" title="角色在战斗中造成的总伤害">总伤害</th>
+                            <th class="damage-detail-cols" title="角色在战斗中造成的非幸运的暴击伤害">纯暴击</th>
+                            <th class="damage-detail-cols" title="角色在战斗中造成的非暴击的幸运伤害">纯幸运</th>
+                            <th class="damage-detail-cols" title="角色在战斗中造成的暴击的幸运伤害">暴击幸运</th>
+                            <th class="dps-cols" title="角色在战斗中的最近一秒造成的伤害">瞬时DPS</th>
+                            <th class="dps-cols" title="角色在战斗中的最大瞬时DPS">最大瞬时</th>
+                            <th class="dps-cols" title="角色在战斗中的总DPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总DPS</th>
+                            <th class="healing-cols" title="角色在战斗中造成的总治疗量">总治疗</th>
+                            <th class="healing-detail-cols" title="角色在战斗中造成的非幸运的暴击治疗量">纯暴击</th>
+                            <th class="healing-detail-cols" title="角色在战斗中造成的非暴击的幸运治疗量">纯幸运</th>
+                            <th class="healing-detail-cols" title="角色在战斗中造成的暴击的幸运治疗量">暴击幸运</th>
+                            <th class="hps-cols" title="角色在战斗中的最近一秒造成的伤害和治疗量">瞬时HPS</th>
+                            <th class="hps-cols" title="角色在战斗中的最大瞬时HPS">最大瞬时</th>
+                            <th class="hps-cols" title="角色在战斗中的总HPS（以第一次技能与最后一次技能之间的时间作为有效战斗时间计算）">总HPS</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
 
     <footer style="margin-top: 40px; font-size: 14px; color: #888;">
         <span>© 2025 Made with ❤️ by </span>
@@ -376,6 +1022,10 @@
         let chartInitialized = false; // 标记图表是否已初始化
         let userColorMap = {}; // 用户固定颜色映射
         let isUpdatingFromLegend = false; // 防止图例事件和控制面板事件相互触发
+        let currentUserArray = []; // 缓存当前用户数组用于查找用户名
+        
+        // y轴动态调整相关变量 
+        const Y_AXIS_FLOOR_MIN = 10000;
         
         // WebSocket连接相关变量
         let socket = null;
@@ -387,6 +1037,357 @@
         
         // 暂停统计相关变量
         let isPaused = false;
+        
+        // 服务器状态提示相关变量
+        let serverStatusTimeout = null;
+        
+        // 数据组显示控制相关变量
+        let currentDataGroup = 'damage';
+        let lastVisiableUserArray = [];
+
+        // 新增技能分析功能
+        let skillChart1 = null;
+        let skillChart2 = null;
+        let currentSkillUserId = 0;
+        
+        // 从series数据中提取可见最大值
+        function getVisibleMaxFromSeries(seriesArray) {
+            let m = 0;
+            for (const series of seriesArray) {
+                const arr = series.data || [];
+                for (let i = 0; i < arr.length; i++) {
+                    const v = arr[i];
+                    if (typeof v === 'number') m = Math.max(m, v);
+                }
+            }
+            return m;
+        }
+
+        // 将数值向上取整到好读的档位
+        function niceCeil(val) {
+            if (val <= 0) return 1000;
+            const exp = Math.pow(10, Math.floor(Math.log10(val)));
+            const bases = [1, 2, 2.5, 5, 10, 20, 25, 50, 100];
+            for (const b of bases) {
+                const candidate = b * exp;
+                if (candidate >= val) return candidate;
+            }
+            return Math.ceil(val / exp) * exp;
+        }
+        
+        // 复制用户数据
+        function copyUserData(userId) {
+            const user = getUserFromArray(userId);
+            if (!user) {
+                console.error('未找到用户数据');
+                return;
+            }
+            
+            const hasValidName = user.name && user.name.trim() !== '';
+            const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || '';
+            const copyText = `${nickname}#${userId} 伤害:${user.total_damage.total} 治疗:${user.total_healing.total} DPS:${user.total_dps.toFixed(2)} HPS:${user.total_hps.toFixed(2)}`;
+
+            // 复制昵称到剪贴板
+            navigator.clipboard.writeText(copyText).then(() => {
+                // 显示复制成功提示
+                showCopySuccess();
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 降级方案：使用传统方法复制
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = copyText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showCopySuccess();
+                } catch (e) {
+                    console.error('降级复制方案也失败:', e);
+                }
+            });
+        }
+        
+        // 显示复制成功提示
+        function showCopySuccess() {
+            // 创建临时提示元素
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 4px;
+                z-index: 10000;
+                font-size: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = '✅ 已复制用户数据';
+            document.body.appendChild(toast);
+            
+            // 3秒后移除提示
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 3000);
+        }
+        
+        // 显示技能分析弹窗
+        async function showSkillAnalysis(userId) {
+            currentSkillUserId = userId;
+            const modal = document.getElementById('skillModal');
+            modal.style.display = 'block';
+            
+            // 获取技能数据
+            await fetchSkillData(userId);
+        }
+        
+        // 关闭技能弹窗
+        function closeSkillModal() {
+            const modal = document.getElementById('skillModal');
+            modal.style.display = 'none';
+            
+            // 销毁图表实例
+            if (skillChart1) {
+                skillChart1.dispose();
+                skillChart1 = null;
+            }
+            if (skillChart2) {
+                skillChart2.dispose();
+                skillChart2 = null;
+            }
+        }
+        
+        // 点击弹窗外部区域关闭弹窗
+        window.onclick = function(event) {
+            const modal = document.getElementById('skillModal');
+            if (event.target === modal) {
+                closeSkillModal();
+            }
+        }
+        
+        // 获取技能数据
+        async function fetchSkillData(userId) {
+            try {
+                const response = await fetch(`/api/skill/${userId}`);
+                const data = await response.json();
+                
+                if (data.code === 0) {
+                    renderSkillData(data.data);
+                } else {
+                    console.error('获取技能数据失败:', data.msg);
+                }
+            } catch (error) {
+                console.error('获取技能数据失败:', error);
+            }
+        }
+        
+        // 渲染技能数据
+        function renderSkillData(skillData) {
+            // 更新用户信息
+            document.getElementById('skillUserId').textContent = skillData.uid;
+            document.getElementById('skillUserName').textContent = 
+                `${skillData.name || `UID:${skillData.uid}` } - 技能分析`;
+            document.getElementById('skillUserNickname').textContent = skillData.name;
+            document.getElementById('skillUserProfession').textContent = skillData.profession;
+            document.getElementById('skillCount').textContent = 
+                Object.keys(skillData.skills).length;
+
+            // 把对象转数组并排序
+            const skills = Object.entries(skillData.skills);
+            const sortedSkills = skills.slice().sort(([, a], [, b]) => b.totalDamage - a.totalDamage);
+
+            // 为图表准备三组数据
+            const skillNames = [];  // 用来存 displayName
+            const damages    = [];
+            const critRates  = [];
+            const luckyRates = [];
+            
+            // 渲染表格
+            const tableBody = document.getElementById('skillTableBody');
+            tableBody.innerHTML = '';
+
+            // 渲染表格 + 收集图表数据
+            sortedSkills.forEach(([skillId, skill]) => {
+                const name = skill.displayName || skillId;
+
+                // 填表格
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${name}</td>
+                    <td>${skill.type}</td>
+                    <td>${skill.elementype}</td>
+                    <td>${skill.totalDamage.toLocaleString()}</td>
+                    <td>${skill.totalCount}</td>
+                    <td class="skill-crit">${(skill.critRate * 100).toFixed(2)}%</td>
+                    <td class="skill-lucky">${(skill.luckyRate * 100).toFixed(2)}%</td>
+                    <td>${skill.damageBreakdown.critical.toLocaleString()}</td>
+                    <td>${skill.damageBreakdown.lucky.toLocaleString()}</td>
+                    <td>${skill.damageBreakdown.crit_lucky.toLocaleString()}</td>
+                    <td>${skill.damageBreakdown.normal.toLocaleString()}</td>
+                `;
+                tableBody.appendChild(row);
+
+                // 收集给图表的数据
+                skillNames.push(name);
+                damages.push(skill.totalDamage);
+                critRates.push(skill.critRate * 100);
+                luckyRates.push(skill.luckyRate * 100);
+            });
+            
+            renderSkillCharts(skillNames, damages, critRates, luckyRates);
+        }
+        
+        // 渲染技能图表
+        function renderSkillCharts(skillIds, damages, critRates, luckyRates) {
+            const topNames   = skillIds.slice(0, 5);
+            const topDamages = damages.slice(0, 5);
+            
+            // 构造前 5 的 data，并且都显示标签
+            const pieData = topNames.map((name, idx) => ({
+                value: topDamages[idx],
+                name: name,
+                label: {
+                    show: true,          // 打开这一项的标签
+                    position: 'outside', // 放到扇区外侧
+                    formatter: '{b}\n{d}%'// 显示“名称 + 百分比”
+                },
+                labelLine: {
+                    show: true           // 显示引导线
+                }
+            }));
+
+            // 销毁现有图表
+            if (skillChart1) skillChart1.dispose();
+            if (skillChart2) skillChart2.dispose();
+            
+            // 创建新的图表实例
+            skillChart1 = echarts.init(document.getElementById('skillDamageChart'));
+            skillChart2 = echarts.init(document.getElementById('skillCritChart'));
+            
+            // 技能数值分布图
+            const damageOption = {
+                title: {
+                    text: '技能数值分布',
+                    left: 'center',
+                    textStyle: { color: '#e2e8f0' }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c} ({d}%)',
+                    backgroundColor: 'rgba(40, 40, 60, 0.9)',
+                    borderColor: '#3498db',
+                    textStyle: { color: '#ecf0f1' }
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: 10,
+                    top: 'center',
+                    textStyle: { color: '#cbd5e0' }
+                },
+                series: [{
+                    name: '技能数值',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#1a2a6c',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '16',
+                            fontWeight: 'bold',
+                            color: '#e2e8f0'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: pieData
+                }]
+            };
+            
+            // 暴击率/幸运率对比图
+            const critOption = {
+                title: {
+                    text: '暴击率与幸运率',
+                    left: 'center',
+                    textStyle: { color: '#e2e8f0' }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    backgroundColor: 'rgba(40, 40, 60, 0.9)',
+                    borderColor: '#3498db',
+                    textStyle: { color: '#ecf0f1' }
+                },
+                legend: {
+                    data: ['暴击率', '幸运率'],
+                    bottom: 10,
+                    textStyle: { color: '#cbd5e0' }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '15%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: skillIds.map(id => `${id}`), //图表技能名
+                    axisLine: { lineStyle: { color: '#7f8c8d' } },
+                    axisLabel: { 
+                        color: '#95a5a6',
+                        interval: 0,
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '百分比',
+                    min: 0,
+                    max: 100,
+                    axisLine: { lineStyle: { color: '#7f8c8d' } },
+                    axisLabel: { color: '#95a5a6' },
+                    splitLine: { lineStyle: { color: 'rgba(127, 140, 141, 0.2)' } }
+                },
+                series: [
+                    {
+                        name: '暴击率',
+                        type: 'bar',
+                        data: critRates,
+                        itemStyle: { color: '#ff9966' }
+                    },
+                    {
+                        name: '幸运率',
+                        type: 'bar',
+                        data: luckyRates,
+                        itemStyle: { color: '#93f9b9' }
+                    }
+                ]
+            };
+            
+            skillChart1.setOption(damageOption);
+            skillChart2.setOption(critOption);
+            
+            // 响应窗口大小变化
+            window.addEventListener('resize', function() {
+                skillChart1.resize();
+                skillChart2.resize();
+            });
+        }
         
         // 多用户性能优化配置
         const CHART_CONFIG = {
@@ -400,33 +1401,77 @@
         let performanceMode = false;
         let userPriorityCache = {}; // 用户优先级缓存
         
-        // 美观的20色配色方案
-        const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-            '#DDA0DD', '#FF9F43', '#54A0FF', '#5F27CD', '#00D2D3',
-            '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#FD79A8',
-            '#FDCB6E', '#E84393', '#A29BFE', '#00B894', '#00CEC9'
-        ];
+        // 优化的20色配色方案
+        const PALETTE_DARK_20 = [
+            "#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7",
+            "#DDA0DD","#FF9F43","#54A0FF","#5F27CD","#00D2D3",
+            "#10AC84","#EE5A24","#0984E3","#6C5CE7","#FD79A8",
+            "#FF7675","#74B9FF","#A29BFE","#00B894","#FDCB6E"
+        ]; // 高饱和度版本，深色背景下区分度更高
+
+        const PALETTE_LIGHT_20 = [
+            "#E74C3C","#3498DB","#2ECC71","#F39C12","#9B59B6",
+            "#1ABC9C","#E67E22","#34495E","#F1C40F","#E91E63",
+            "#8E44AD","#16A085","#27AE60","#F39800","#D35400",
+            "#C0392B","#2980B9","#17A2B8","#28A745","#6F42C1"
+        ]; // 强对比版本，浅色背景下清晰易辨
+
+        function pickPalette() {
+            return document.body.classList.contains('dark-mode') ? PALETTE_DARK_20 : PALETTE_LIGHT_20;
+        }
         
         // 为用户分配固定颜色
         function getUserColor(userId) {
+            const palette = pickPalette();
             const userIdStr = String(userId);
             
             if (!userColorMap[userIdStr]) {
                 // 基于用户ID的哈希值分配颜色，确保同一个用户总是得到相同的颜色
                 let hash = 0;
                 for (let i = 0; i < userIdStr.length; i++) {
-                    const char = userIdStr.charCodeAt(i);
-                    hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash; // 转换为32位整数
+                    hash = ((hash << 5) - hash) + userIdStr.charCodeAt(i);
+                    hash |= 0;
                 }
-                
-                // 使用哈希值选择颜色
-                const colorIndex = Math.abs(hash) % colors.length;
-                userColorMap[userIdStr] = colors[colorIndex];
+                const idx = Math.abs(hash) % palette.length;
+                userColorMap[userIdStr] = palette[idx];
+            }
+            return userColorMap[userIdStr];
+        }
+
+        // 服务器状态提示管理
+        function showServerStatus(status, message, autoHide = true) {
+            const statusElement = document.getElementById('serverStatus');
+            const textElement = document.getElementById('serverStatusText');
+            
+            if (!statusElement || !textElement) return;
+            
+            // 清除之前的自动隐藏定时器
+            if (serverStatusTimeout) {
+                clearTimeout(serverStatusTimeout);
+                serverStatusTimeout = null;
             }
             
-            return userColorMap[userIdStr];
+            // 更新状态样式
+            statusElement.className = 'server-status show ' + status;
+            textElement.textContent = message;
+            
+            // 自动隐藏（连接成功状态3秒后隐藏，其他状态不自动隐藏）
+            if (autoHide && status === 'connected') {
+                serverStatusTimeout = setTimeout(() => {
+                    hideServerStatus();
+                }, 3000);
+            }
+        }
+        
+        function hideServerStatus() {
+            const statusElement = document.getElementById('serverStatus');
+            if (statusElement) {
+                statusElement.classList.remove('show');
+            }
+            if (serverStatusTimeout) {
+                clearTimeout(serverStatusTimeout);
+                serverStatusTimeout = null;
+            }
         }
         
         // 用户优先级计算 - 基于DPS和活跃度
@@ -467,6 +1512,7 @@
         // WebSocket连接初始化
         function initWebSocket() {
             try {
+                showServerStatus('reconnecting', '🔄 正在连接服务器...', false);
                 socket = io();
                 
                 socket.on('connect', () => {
@@ -474,6 +1520,7 @@
                     isWebSocketConnected = true;
                     lastWebSocketMessage = Date.now();
                     webSocketReconnectAttempts = 0;
+                    showServerStatus('connected', '✅ 服务器连接成功');
                     
                     // 如果之前启用了API备用，现在切换回WebSocket
                     if (fallbackToAPI) {
@@ -487,6 +1534,7 @@
                     console.log('WebSocket连接断开');
                     isWebSocketConnected = false;
                     webSocketReconnectAttempts++;
+                    if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接断开', false);
                 });
                 
                 socket.on('data', (data) => {
@@ -500,10 +1548,12 @@
                 socket.on('connect_error', (error) => {
                     console.error('WebSocket连接错误:', error);
                     isWebSocketConnected = false;
+                    if (!fallbackToAPI) showServerStatus('disconnected', '❌ 服务器连接失败', false);
                 });
                 
             } catch (error) {
                 console.error('WebSocket初始化失败:', error);
+                showServerStatus('disconnected', '❌ WebSocket初始化失败', false);
                 startAPIFallback();
             }
         }
@@ -519,6 +1569,7 @@
                 if (timeSinceLastMessage > 5000 && !fallbackToAPI) {
                     console.warn('WebSocket超过5秒无消息，切换到API轮询模式');
                     fallbackToAPI = true;
+                    showServerStatus('api-mode', '📡 切换到API轮询模式', false);
                     startAPIFallback();
                 }
             }, 5000); // 每5秒检查一次
@@ -529,7 +1580,8 @@
             if (apiInterval) return; // 避免重复启动
             
             console.log('启动API轮询备用模式');
-            apiInterval = setInterval(fetchDataAndUpdateTables, 100);
+            showServerStatus('api-mode', '📡 使用API轮询模式', false);
+            apiInterval = setInterval(fetchData, 100);
         }
         
         // 停止API备用模式
@@ -541,20 +1593,27 @@
             }
         }
         
+        // 获取用户数据的辅助函数
+        function getUserFromArray(userId) {
+            return currentUserArray.find(user => user.id.toString() === userId.toString());
+        }
+        
         // 处理数据更新（WebSocket和API通用）
-        function processDataUpdate(data) {
+        function processDataUpdate(data, updateHistory = true) {
             try {
-                const damageTable = document.getElementById('damageTable').querySelector('tbody');
-                damageTable.innerHTML = '';
-                
                 // 将数据转换为数组以便排序
                 const userArray = Object.keys(data.user).map(id => ({
                     id: Number(id),
                     ...data.user[id]
                 }));
                 
+                // 缓存当前用户数组
+                currentUserArray = userArray;
+
                 // 更新DPS历史数据
-                updateDpsHistory(userArray);
+                if (updateHistory) {
+                    updateDpsHistory(userArray);
+                }
                 
                 // 更新用户控制列表
                 updateUserControlsList(userArray);
@@ -564,59 +1623,8 @@
                 
                 // 过滤不可见的用户
                 const visibleUserArray = userArray.filter(user => visibleUsers[user.id] !== false);
-                
-                // 生成表格行
-                for (const user of visibleUserArray) {
-                    const crit_rate = user.total_count.critical / user.total_count.total;
-                    const lucky_rate = user.total_count.lucky / user.total_count.total;
-                    
-                    const row = document.createElement('tr');
-                    
-                    // 昵称列
-                    const nicknameCell = document.createElement('td');
-                    const nickname = userNicknames[user.id] || `UID:${user.id}`;
-                    nicknameCell.textContent = nickname;
-                    
-                    row.appendChild(nicknameCell);
-                    
-                    const isSimpleMode = document.body.classList.contains('simple-mode');
-                    
-                    // 其他数据列
-                    const otherCells = [
-                        user.profession || '未知',
-                        user.taken_damage,
-                        `${(crit_rate * 100).toFixed(2)}%`,
-                        `${(lucky_rate * 100).toFixed(2)}%`,
-                        user.total_damage.total,
-                        // 简洁模式下跳过伤害详细列
-                        ...(isSimpleMode ? [] : [
-                            user.total_damage.critical,
-                            user.total_damage.lucky,
-                            user.total_damage.crit_lucky
-                        ]),
-                        user.realtime_dps,
-                        user.realtime_dps_max,
-                        user.total_dps.toFixed(2),
-                        user.total_healing.total,
-                        // 简洁模式下跳过治疗详细列
-                        ...(isSimpleMode ? [] : [
-                            user.total_healing.critical,
-                            user.total_healing.lucky,
-                            user.total_healing.crit_lucky
-                        ]),
-                        user.realtime_hps,
-                        user.realtime_hps_max,
-                        user.total_hps.toFixed(2),
-                    ];
-                    
-                    otherCells.forEach(cellData => {
-                        const cell = document.createElement('td');
-                        cell.textContent = cellData;
-                        row.appendChild(cell);
-                    });
-                    
-                    damageTable.appendChild(row);
-                }
+                lastVisiableUserArray = visibleUserArray;
+                updateTables(visibleUserArray);
                 
                 // 检查是否需要启用性能模式
                 const activeUserCount = Object.keys(dpsHistory).length;
@@ -626,24 +1634,166 @@
                     performanceMode = shouldEnablePerformanceMode;
                     console.log(`${performanceMode ? '启用' : '关闭'}性能模式 (用户数: ${activeUserCount})`);
                 }
-                
+
                 // 更新图表
-                updateChart(userArray);
+                if (updateHistory) {
+                    updateChart(userArray);
+                }
             } catch (err) {
                 console.error('处理数据更新失败：', err);
             }
         }
+                
+        // 生成表格行
+        function updateTables(visibleUserArray) {
+            const damageTable = document.getElementById('damageTable').querySelector('tbody');
+            //获取damageTable里的所有行
+            let existingRows = damageTable.querySelectorAll('tr');
+            if (existingRows.length > visibleUserArray.length) {
+                // 移除多余的行
+                for (let i = existingRows.length - 1; i >= visibleUserArray.length; i--) {
+                    damageTable.removeChild(existingRows[i]);
+                }
+            }
+            if (existingRows.length < visibleUserArray.length) {
+                // 添加新行
+                for (let i = existingRows.length; i < visibleUserArray.length; i++) {
+                    const row = document.createElement('tr');
+                    damageTable.appendChild(row);
+                }
+            }
+            existingRows = damageTable.querySelectorAll('tr');
+            
+            for (let i = 0; i < visibleUserArray.length; i++) {
+                const user = visibleUserArray[i];
+                const crit_rate = user.total_count.critical / user.total_count.total;
+                const lucky_rate = user.total_count.lucky / user.total_count.total;
 
-        async function fetchDataAndUpdateTables() {
+                const row = existingRows[i];
+
+                const isSimpleMode = document.body.classList.contains('simple-mode');
+                    
+                // 其他数据列
+                const otherCells = [
+                    user.profession || '未知',
+                    user.taken_damage,
+                    `${(crit_rate * 100).toFixed(2)}%`,
+                    `${(lucky_rate * 100).toFixed(2)}%`,
+                ];
+                if (currentDataGroup === 'damage' || currentDataGroup === 'all') {
+                    otherCells.push(user.total_damage.total);
+                    if (!isSimpleMode) {
+                        otherCells.push(
+                            user.total_damage.critical,
+                            user.total_damage.lucky,
+                            user.total_damage.crit_lucky,
+                        );
+                    }
+                    otherCells.push(
+                        user.realtime_dps,
+                        user.realtime_dps_max,
+                        user.total_dps.toFixed(2),
+                    );
+                }
+                if (currentDataGroup === 'healing' || currentDataGroup === 'all') {
+                    otherCells.push(user.total_healing.total);
+                    if (!isSimpleMode) {
+                        otherCells.push(
+                            user.total_healing.critical,
+                            user.total_healing.lucky,
+                            user.total_healing.crit_lucky,
+                        );
+                    }
+                    otherCells.push(
+                        user.realtime_hps,
+                        user.realtime_hps_max,
+                        user.total_hps.toFixed(2),
+                    );
+                }
+                let existingCells = row.querySelectorAll('td');
+                //所需展示的列数
+                const requiredColumnCount = 3 + otherCells.length;
+                if (existingCells.length > requiredColumnCount) {
+                    // 移除多余的单元格
+                    for (let j = existingCells.length - 1; j >= requiredColumnCount; j--) {
+                        row.removeChild(existingCells[j]);
+                    }
+                }
+                if (existingCells.length < requiredColumnCount) {
+                    // 添加新单元格
+                    for (let j = existingCells.length; j < requiredColumnCount; j++) {
+                        const cell = document.createElement('td');
+                        row.appendChild(cell);
+                    }
+                }
+                existingCells = row.querySelectorAll('td');
+                // 更新单元格内容
+                existingCells.forEach((cell, index) => {
+                    if (index < 2) return;
+                    if (otherCells[index - 2] !== undefined) {
+                        cell.textContent = otherCells[index - 2];
+                    }
+                });
+
+                // 角色ID列
+                const uidCell = existingCells[0];
+                uidCell.textContent = `${user.id}`;
+                    
+                // 角色昵称列
+                const nicknameCell = existingCells[1];
+                // Check if user.name is a non-empty string
+                const hasValidName = user.name && user.name.trim() !== '';
+                const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
+                    
+                nicknameCell.textContent = nickname;
+                const operationCell = existingCells[existingCells.length - 1];
+                if (operationCell.querySelector('.skill-btn')) {
+                    // 如果已经存在技能按钮，则只更新用户ID
+                    operationCell.querySelector('.skill-btn').setAttribute('data-user-id', user.id);
+                    operationCell.querySelector('.copy-btn').setAttribute('data-user-id', user.id);
+                } else {
+                    operationCell.innerHTML = '';
+                    const operationDiv = document.createElement('div');
+                    operationDiv.className = 'operation-div';
+                    operationCell.appendChild(operationDiv);
+
+                    // 创建复制按钮
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-btn';
+                    copyButton.innerHTML = '<i class="icon">📋</i> 复制数据';
+                    copyButton.setAttribute('data-user-id', user.id);
+                    operationDiv.appendChild(copyButton);
+
+                    // 创建技能按钮
+                    const skillButton = document.createElement('button');
+                    skillButton.className = 'skill-btn';
+                    skillButton.innerHTML = '<i class="icon">📊</i> 技能分析';
+                    skillButton.setAttribute('data-user-id', user.id);
+                    operationDiv.appendChild(skillButton);
+                }
+            }
+            updateTableStickyHeader();
+        }
+
+        async function fetchData() {
             // 暂停时不获取数据
             if (isPaused) return;
             
             try {
                 const res = await fetch('/api/data');
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
                 const data = await res.json();
                 processDataUpdate(data);
+                
+                // API请求成功时，如果显示的是断线状态，更新为API模式
+                if (fallbackToAPI) {
+                    showServerStatus('api-mode', '📡 API轮询模式运行中', false);
+                }
             } catch (err) {
                 console.error('获取数据失败：', err);
+                showServerStatus('disconnected', '❌ 无法获取服务器数据', false);
             }
         }
 
@@ -683,7 +1833,7 @@
             const select = document.getElementById('sortSelect');
             currentSortMode = select.value;
             localStorage.setItem('sortMode', currentSortMode);
-            fetchDataAndUpdateTables();
+            fetchData();
         }
 
         async function clearData() {
@@ -695,17 +1845,21 @@
             chartDatasetMap = {};
             userPriorityCache = {};
             userColorMap = {}; // 清空颜色映射
+            currentUserArray = []; // 清空当前用户数组缓存
+            lastUpdateTime = 0; // 重置图表更新时间
             performanceMode = false;
-            
-            // 清空ECharts图表
-            if (chart && typeof chart.setOption === 'function') {
-                // 温和地清空数据，保持基础配置不变
-                chart.setOption({
-                    series: [],
-                    legend: {
-                        data: []
-                    }
-                });
+
+            // 清空ECharts图表 - 完全重新初始化
+            if (chart) {
+                // 销毁现有图表
+                chart.dispose();
+                chart = null;
+
+                // 重置图表初始化状态
+                chartInitialized = false;
+
+                // 重新初始化空图表
+                initChart();
             }
             
             // 清空控制面板中的用户控制项
@@ -713,8 +1867,22 @@
             if (userControlsList) {
                 userControlsList.innerHTML = '';
             }
-            
-            fetchDataAndUpdateTables();
+
+            fetchData();
+            // 清空表格显示
+            const damageTable = document.getElementById('damageTable').querySelector('tbody');
+            damageTable.innerHTML = '';
+
+            // 即使在暂停状态下也要获取数据以显示清空后的结果
+            // 临时保存暂停状态
+            const wasPaused = isPaused;
+            isPaused = false;
+
+            // 获取并显示清空后的数据
+            await fetchData();
+
+            // 恢复暂停状态
+            isPaused = wasPaused;
         }
 
         function toggleDarkMode() {
@@ -747,7 +1915,14 @@
                 button.textContent = '📄 详细模式';
                 localStorage.setItem('simpleMode', 'true');
             }
+            
+            // 在暂停状态下，切换模式后需要重新渲染表格
+            if (isPaused && lastVisiableUserArray.length > 0) {
+                updateTables(lastVisiableUserArray);
+            }
         }
+
+
 
         // 切换暂停/开始统计
         function togglePause() {
@@ -814,6 +1989,53 @@
             }
         }
 
+        // 初始化数据组显示模式
+        function initDataGroup() {
+            const savedDataGroup = localStorage.getItem('dataGroup') || 'damage';
+            currentDataGroup = savedDataGroup;
+            setDataGroup(savedDataGroup);
+        }
+
+        // 切换数据组显示
+        function toggleDataGroup(group) {
+            currentDataGroup = group;
+            setDataGroup(group);
+            localStorage.setItem('dataGroup', group);
+            if (isPaused) updateTables(lastVisiableUserArray);
+        }
+
+        // 设置数据组显示状态
+        function setDataGroup(group) {
+            const body = document.body;
+            const damageBtn = document.getElementById('damageGroupBtn');
+            const healingBtn = document.getElementById('healingGroupBtn');
+            const allBtn = document.getElementById('allGroupBtn');
+            
+            body.classList.remove('hide-damage', 'hide-healing');
+            [damageBtn, healingBtn, allBtn].forEach(btn => {
+                if (btn) btn.classList.remove('active');
+            });
+            
+            switch (group) {
+                case 'damage':
+                    body.classList.add('hide-healing');
+                    if (damageBtn) damageBtn.classList.add('active');
+                    break;
+                case 'healing':
+                    body.classList.add('hide-damage');
+                    if (healingBtn) healingBtn.classList.add('active');
+                    break;
+                case 'all':
+                    if (allBtn) allBtn.classList.add('active');
+                    break;
+                default:
+                    // 默认显示伤害&DPS
+                    body.classList.add('hide-healing');
+                    if (damageBtn) damageBtn.classList.add('active');
+                    break;
+            }
+        }
+
         // 初始化暂停状态 - 优先从服务器获取状态
         async function initPauseState() {
             try {
@@ -858,7 +2080,7 @@
                 dpsHistory[user.id] = dpsHistory[user.id].filter(point => point.time > cutoffTime);
             }
         }
-        
+
         // 初始化ECharts图表
         function initChart() {
             const chartDom = document.getElementById('dpsChart');
@@ -1060,19 +2282,13 @@
             const currentOption = chart.getOption();
             const currentSeries = currentOption.series || [];
             
-            // 生成时间轴数据 (只在初次或数据长度变化时更新)
-            if (!chartInitialized || !currentOption.xAxis || !currentOption.xAxis[0] || currentOption.xAxis[0].data.length !== dataLength) {
-                const xAxisData = [];
+            // 生成时间轴数据
+            const xAxisChanged = !chartInitialized || !currentOption.xAxis || !currentOption.xAxis[0] || currentOption.xAxis[0].data.length !== dataLength;
+            let xAxisData = [];
+            if (xAxisChanged) {
                 for (let i = 0; i < dataLength; i++) {
                     xAxisData.push('');
                 }
-                
-                chart.setOption({
-                    xAxis: {
-                        data: xAxisData
-                    }
-                }, false, true); // 不合并，静默更新
-                
                 chartInitialized = true;
             }
             
@@ -1088,44 +2304,74 @@
             // 处理每个优先用户
             priorityUsers.forEach((userId, index) => {
                 const history = dpsHistory[userId];
-                const nickname = userNicknames[userId] || `UID:${userId}`;
+                const user = getUserFromArray(userId);
+                const hasValidName = user?.name && user.name.trim() !== '';
+                const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
                 const color = getUserColor(userId); // 使用固定颜色分配
                 
                 // 构建数据数组
                 const data = new Array(dataLength).fill(null);
                 
-                // 填充真实数据点
+                // 填充真实数据点 - 稳定化时间映射
                 const timeStep = performanceMode ? 200 : 100;
+                
+                // 使用固定时间基准，避免滚动时索引抖动
+                const baseTime = Math.floor(currentTime / timeStep) * timeStep;
+                
                 history.forEach(point => {
-                    const timeAgo = currentTime - point.time;
+                    const timeAgo = baseTime - point.time;
                     const dataIndex = dataLength - 1 - Math.floor(timeAgo / timeStep);
                     if (dataIndex >= 0 && dataIndex < dataLength) {
-                        data[dataIndex] = point.dps;
+                        // 如果该位置已有数据，取最大值避免覆盖峰值
+                        if (data[dataIndex] === null) {
+                            data[dataIndex] = point.dps;
+                        } else {
+                            data[dataIndex] = Math.max(data[dataIndex], point.dps);
+                        }
                     }
                 });
                 
-                // 平滑处理 - 避免突兀的断线
+                // 数据稳定化处理 - 减少蠕动和跳跃
                 if (!performanceMode) {
+                    // 1. 峰值保护：避免相邻点的峰值跳跃
+                    for (let i = 1; i < data.length - 1; i++) {
+                        if (data[i] !== null && data[i-1] !== null && data[i+1] !== null) {
+                            // 如果当前点明显偏离趋势，平滑处理
+                            const avg = (data[i-1] + data[i+1]) / 2;
+                            if (Math.abs(data[i] - avg) > avg * 0.3 && data[i] < avg) {
+                                data[i] = Math.max(data[i], avg * 0.8);
+                            }
+                        }
+                    }
+                    
+                    // 2. 填充小间隔，保持连续性
                     for (let i = 1; i < data.length; i++) {
                         if (data[i] === null && data[i-1] !== null) {
-                            // 查找间隔长度
-                            let gapLength = 0;
-                            for (let j = i; j < Math.min(i + 10, data.length); j++) {
-                                if (data[j] !== null) break;
-                                gapLength++;
+                            // 短间隔用渐变填充，避免突然断线
+                            let nextIndex = -1;
+                            for (let j = i + 1; j < Math.min(i + 3, data.length); j++) {
+                                if (data[j] !== null) {
+                                    nextIndex = j;
+                                    break;
+                                }
                             }
-                            // 短间隔保持水平线，避免视觉断裂
-                            if (gapLength <= 5) {
+                            if (nextIndex !== -1 && nextIndex - i <= 2) {
+                                // 线性插值填充
+                                const step = (data[nextIndex] - data[i-1]) / (nextIndex - i + 1);
+                                data[i] = data[i-1] + step;
+                            } else {
+                                // 保持前值
                                 data[i] = data[i-1];
                             }
                         }
                     }
                 }
                 
-                // 线条样式
-                const lineWidths = [3, 2.5, 2.2, 1.8, 1.5];
-                const widthIndex = Math.floor(index / 4) % lineWidths.length;
-                const lineWidth = performanceMode ? Math.max(1.5, lineWidths[widthIndex] - 0.5) : lineWidths[widthIndex];
+                // 重要程度分层样式（Top 5突出显示）
+                const PRIMARY_COUNT = 5;
+                const isPrimary = index < PRIMARY_COUNT;
+                const lineWidth = isPrimary ? 3.0 : 1.2;
+                const opacity = isPrimary ? 1.0 : 0.45;
                 
                 // 检查是否存在同名series
                 if (existingSeriesMap[nickname]) {
@@ -1137,39 +2383,49 @@
                         lineStyle: {
                             ...existingSeries.lineStyle,
                             color: color,
-                            width: lineWidth
+                            width: lineWidth,
+                            opacity: opacity
                         },
                         itemStyle: {
-                            color: color
-                        }
+                            color: color,
+                            opacity: opacity
+                        },
+                        z: isPrimary ? 3 : 1,
+                        zlevel: isPrimary ? 0 : -1
                     });
                 } else {
-                    // 创建新series
+                    // 创建新series（分层显示）
                     updatedSeries.push({
                         name: nickname,
                         type: 'line',
                         data: data,
+                        symbol: 'none',
+                        smooth: false, // 完全关闭平滑避免形态抖动
+                        connectNulls: false,
+                        sampling: false, // 关闭采样避免峰值游移
+                        animation: false,
+                        silent: false,
                         lineStyle: {
                             color: color,
                             width: lineWidth,
-                            cap: 'round',
-                            join: 'round'
+                            opacity: opacity
                         },
-                        itemStyle: {
-                            color: color
+                        itemStyle: { 
+                            color: color, 
+                            opacity: opacity 
                         },
-                        symbol: 'none',
-                        smooth: 0.15, // 减少平滑度避免过度计算
-                        connectNulls: false,
-                        sampling: 'lttb',
-                        animation: false, // 完全禁用动画
-                        silent: false, // 保持交互性
                         emphasis: {
                             focus: 'series',
-                            lineStyle: {
-                                width: lineWidth + 0.5
+                            lineStyle: { 
+                                width: lineWidth + 0.7, 
+                                opacity: 1 
+                            },
+                            itemStyle: { 
+                                opacity: 1 
                             }
-                        }
+                        },
+                        z: isPrimary ? 3 : 1,
+                        zlevel: isPrimary ? 0 : -1
                     });
                 }
             });
@@ -1196,16 +2452,106 @@
                 legendSelected[seriesName] = !(userIdStr && visibleUsers[userIdStr] === false);
             });
             
-            // 使用ECharts内置的图例机制，统一处理显示/隐藏
+            // y轴调整算法
+            const visibleMax = getVisibleMaxFromSeries(updatedSeries);
+            
+            // 让可见最大值占约75%图高，向上取整
+            let proposedTop = visibleMax > 0 ? 
+                niceCeil(visibleMax / 0.75) : Y_AXIS_FLOOR_MIN;
+            
+            // 保底最小值
+            proposedTop = Math.max(proposedTop, Y_AXIS_FLOOR_MIN);
+            
+            // 加3%顶部余量防压顶
+            proposedTop = Math.max(proposedTop, visibleMax * 1.03);
+            
+            // 上快下慢 + 短暂滞后
+            const DOWN_FRAC = 0.85;
+            const DOWN_DWELL_MS = 1500;
+            const nowTs = Date.now();
+            window.__ymax_state = window.__ymax_state || { yMax: 10000, since: 0 };
+            
+            let { yMax: curTop, since } = window.__ymax_state;
+            
+            // 是否允许下调
+            let canDown = false;
+            if (visibleMax < curTop * DOWN_FRAC) {
+                if (!since) since = nowTs;
+                canDown = (nowTs - since) >= DOWN_DWELL_MS;
+            } else {
+                since = 0; // 只要又接近上沿，取消降轴计时
+            }
+            
+            // 只允许在 canDown==true 时把目标设得比当前低
+            if (!canDown && proposedTop < curTop) proposedTop = curTop;
+            
+            // 限制单帧最大降幅
+            const MAX_DROP = 0.15;
+            if (proposedTop < curTop * (1 - MAX_DROP)) {
+                proposedTop = curTop * (1 - MAX_DROP);
+            }
+            
+            // 平滑一步
+            const alpha = proposedTop > curTop ? 0.35 : 0.18;
+            curTop = curTop + alpha * (proposedTop - curTop);
+            
+            // 微抖收敛
+            if (Math.abs(curTop - proposedTop) < 1) curTop = proposedTop;
+            
+            // 更新状态
+            window.__ymax_state = { yMax: curTop, since };
+            
+            // 合并所有配置为一次setOption调用
             chart.setOption({
+                // 如果这次 x 轴长度改变，也一起带上
+                ...(xAxisChanged ? { 
+                    xAxis: { 
+                        data: xAxisData,
+                        axisLine: { lineStyle: { color: document.body.classList.contains('dark-mode') ? 'rgba(180,180,180,0.25)' : 'rgba(100,100,100,0.4)' } },
+                        axisTick: { lineStyle: { color: document.body.classList.contains('dark-mode') ? 'rgba(180,180,180,0.25)' : 'rgba(100,100,100,0.4)' } },
+                        axisLabel: { color: document.body.classList.contains('dark-mode') ? 'rgba(220,220,220,0.65)' : 'rgba(60,60,60,0.8)' },
+                        splitLine: { show: true, lineStyle: { color: document.body.classList.contains('dark-mode') ? 'rgba(200,200,200,0.12)' : 'rgba(150,150,150,0.3)', type: 'dashed' } }
+                    } 
+                } : {}),
                 series: updatedSeries,
                 legend: {
-                    data: updatedSeries.map(s => s.name), // 重新设置图例数据
+                    data: updatedSeries.map(s => s.name),
                     selected: legendSelected,
                     textStyle: {
-                        color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#666'
+                        color: document.body.classList.contains('dark-mode') ? '#E6E6E6' : '#444'
                     }
-                }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'DPS',
+                    nameTextStyle: {
+                        color: document.body.classList.contains('dark-mode') ? 'rgba(220,220,220,0.8)' : '#333',
+                        fontSize: 12
+                    },
+                    min: 0,
+                    max: curTop,
+                    splitNumber: 6,
+                    animation: false,
+                    axisLine: { lineStyle: { color: document.body.classList.contains('dark-mode') ? 'rgba(180,180,180,0.25)' : 'rgba(100,100,100,0.4)' } },
+                    axisTick: { lineStyle: { color: document.body.classList.contains('dark-mode') ? 'rgba(180,180,180,0.25)' : 'rgba(100,100,100,0.4)' } },
+                    axisLabel: {
+                        color: document.body.classList.contains('dark-mode') ? 'rgba(220,220,220,0.65)' : 'rgba(60,60,60,0.8)',
+                        fontSize: 11,
+                        formatter: function(value) {
+                            if (value >= 1000) {
+                                return (value / 1000).toFixed(1) + 'K';
+                            }
+                            return value;
+                        }
+                    },
+                    splitLine: { lineStyle: { color: document.body.classList.contains('dark-mode') ? 'rgba(200,200,200,0.12)' : 'rgba(150,150,150,0.3)', type: 'dashed' } }
+                },
+                tooltip: {
+                    backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(32,32,40,0.92)' : 'rgba(255,255,255,0.95)',
+                    borderColor: document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)',
+                    textStyle: { color: document.body.classList.contains('dark-mode') ? '#EEE' : '#333' }
+                },
+                grid: { left: 56, right: '4%', bottom: '8%', top: '15%', containLabel: true }
             }, false, true);
             
             // 更新状态显示
@@ -1240,15 +2586,17 @@
                     continue;
                 }
                 
-                const nickname = userNicknames[userIdStr] || `UID:${user.id}`;
+                const hasValidName = user.name && user.name.trim() !== '';
+                const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${user.id}`;
                 const isVisible = visibleUsers[userIdStr] !== false;
                 
                 const controlDiv = document.createElement('div');
                 controlDiv.className = 'user-controls';
                 controlDiv.dataset.userId = userIdStr;
+                const placeholderText = (hasValidName ? user.name : '昵称');
                 controlDiv.innerHTML = `
                     <input type="checkbox" class="visibility-checkbox" ${isVisible ? 'checked' : ''} onchange="toggleUserVisibility(${user.id}, this.checked)">
-                    <input type="text" class="user-nickname-input" value="${userNicknames[userIdStr] || ''}" placeholder="昵称" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
+                    <input type="text" class="user-nickname-input" value="${userNicknames[userIdStr] || ''}" placeholder="${placeholderText}" onchange="updateNickname(${user.id}, this.value)" oninput="updateNickname(${user.id}, this.value)">
                     <span class="user-uid">(UID:${user.id})</span>
                 `;
                 
@@ -1284,7 +2632,9 @@
                 isUpdatingFromLegend = true;
                 
                 // 找到对应的series名称
-                const nickname = userNicknames[userIdStr] || `UID:${userId}`;
+                const user = getUserFromArray(userId);
+                const hasValidName = user?.name && user.name.trim() !== '';
+                const nickname = userNicknames[userIdStr] || (hasValidName ? user.name : '') || `UID:${userId}`;
                 
                 // 通过ECharts API切换图例选中状态
                 chart.dispatchAction({
@@ -1324,7 +2674,9 @@
             if (chart) {
                 checkboxes.forEach(cb => {
                     const userId = cb.parentElement.dataset.userId;
-                    const nickname = userNicknames[userId] || `UID:${userId}`;
+                    const user = getUserFromArray(userId);
+                    const hasValidName = user?.name && user.name.trim() !== '';
+                    const nickname = userNicknames[userId] || (hasValidName ? user.name : '') || `UID:${userId}`;
                     
                     // 设置标志防止递归触发
                     isUpdatingFromLegend = true;
@@ -1352,7 +2704,7 @@
             }
             
             // 触发数据更新，重新渲染表格
-            fetchDataAndUpdateTables();
+            fetchData();
         }
         
         // 清空所有昵称
@@ -1368,13 +2720,47 @@
             }
         }
 
+        // 切换控制面板弹窗显示/隐藏
+        function toggleControlsModal() {
+            const modal = document.getElementById('controlsModal');
+            const isVisible = modal.style.display === 'block';
+            
+            if (isVisible) {
+                modal.style.display = 'none';
+            } else {
+                modal.style.display = 'block';
+            }
+        }
+
+        // 点击弹窗外部区域关闭弹窗
+        window.onclick = function(event) {
+            const modal = document.getElementById('controlsModal');
+            if (event.target === modal) {
+                toggleControlsModal();
+            }
+        }
+
+        // 键盘ESC键关闭弹窗
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('controlsModal');
+                if (modal.style.display === 'block') {
+                    toggleControlsModal();
+                }
+            }
+        });
+
         // 初始化
         function initialize() {
             initTheme();
             initSimpleMode();
             initSortMode();
+            initDataGroup();
             initPauseState();
             initChart();
+            
+            // 显示初始连接状态
+            showServerStatus('reconnecting', '🔄 正在初始化连接...', false);
             
             // 初始化WebSocket连接
             initWebSocket();
@@ -1383,7 +2769,34 @@
             monitorWebSocketConnection();
             
             // 只在初始化时获取一次数据，后续通过WebSocket接收
-            fetchDataAndUpdateTables();
+            fetchData();
+            
+            // 添加事件委托处理技能按钮点击
+            const damageTable = document.getElementById('damageTable');
+            if (damageTable) {
+                damageTable.addEventListener('click', function(event) {
+                    // 处理技能按钮点击
+                    if (event.target.classList.contains('skill-btn') || 
+                        event.target.closest('.skill-btn')) {
+                        const button = event.target.classList.contains('skill-btn') ? 
+                            event.target : event.target.closest('.skill-btn');
+                        const userId = button.getAttribute('data-user-id');
+                        if (userId) {
+                            showSkillAnalysis(parseInt(userId));
+                        }
+                    }
+                    // 处理复制按钮点击
+                    else if (event.target.classList.contains('copy-btn') || 
+                        event.target.closest('.copy-btn')) {
+                        const button = event.target.classList.contains('copy-btn') ? 
+                            event.target : event.target.closest('.copy-btn');
+                        const userId = button.getAttribute('data-user-id');
+                        if (userId) {
+                            copyUserData(parseInt(userId));
+                        }
+                    }
+                });
+            }
         }
         
         // 等待DOM加载完成后初始化
@@ -1392,6 +2805,18 @@
         } else {
             initialize();
         }
+    </script>
+    <script>
+        function updateTableStickyHeader(){
+            const damageTable = document.getElementById('damageTable');
+            const damageTableRows = damageTable.querySelectorAll('tr');
+            damageTableRows.forEach((row) => {
+                const top = row.offsetTop
+                row.style.setProperty('--th-top', `${top}px`);
+            });
+        }
+        window.addEventListener('resize', updateTableStickyHeader);
+        document.addEventListener('DOMContentLoaded', updateTableStickyHeader);
     </script>
 </body>
 
