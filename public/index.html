@@ -351,7 +351,6 @@
             transition: all 0.3s;
             font-weight: 500;
             font-size: 13px;
-            margin-left: 5px;
         }
         
         .skill-btn:hover {
@@ -371,13 +370,21 @@
             transition: all 0.3s;
             font-weight: 500;
             font-size: 13px;
-            margin-right: 5px;
         }
         
         .copy-btn:hover {
             background: linear-gradient(45deg, #2ecc71, #27ae60);
             transform: translateY(-2px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 操作按钮容器样式 */
+        .operation-div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
         }
         
         /* 技能统计弹窗样式 */
@@ -1740,27 +1747,30 @@
                 const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
                     
                 nicknameCell.textContent = nickname;
-                const skillButtonCell = existingCells[existingCells.length - 1];
-                if (skillButtonCell.querySelector('.skill-btn')) {
+                const operationCell = existingCells[existingCells.length - 1];
+                if (operationCell.querySelector('.skill-btn')) {
                     // 如果已经存在技能按钮，则只更新用户ID
-                    skillButtonCell.querySelector('.skill-btn').setAttribute('data-user-id', user.id);
-                    skillButtonCell.querySelector('.copy-btn').setAttribute('data-user-id', user.id);
+                    operationCell.querySelector('.skill-btn').setAttribute('data-user-id', user.id);
+                    operationCell.querySelector('.copy-btn').setAttribute('data-user-id', user.id);
                 } else {
-                    skillButtonCell.innerHTML = '';
-                    
+                    operationCell.innerHTML = '';
+                    const operationDiv = document.createElement('div');
+                    operationDiv.className = 'operation-div';
+                    operationCell.appendChild(operationDiv);
+
                     // 创建复制按钮
                     const copyButton = document.createElement('button');
                     copyButton.className = 'copy-btn';
                     copyButton.innerHTML = '<i class="icon">📋</i> 复制数据';
                     copyButton.setAttribute('data-user-id', user.id);
-                    skillButtonCell.appendChild(copyButton);
-                    
+                    operationDiv.appendChild(copyButton);
+
                     // 创建技能按钮
                     const skillButton = document.createElement('button');
                     skillButton.className = 'skill-btn';
                     skillButton.innerHTML = '<i class="icon">📊</i> 技能分析';
                     skillButton.setAttribute('data-user-id', user.id);
-                    skillButtonCell.appendChild(skillButton);
+                    operationDiv.appendChild(skillButton);
                 }
             }
         }
