@@ -4,6 +4,7 @@ const readline = require('readline');
 const winston = require("winston");
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const PacketProcessor = require('./algo/packet');
@@ -649,7 +650,7 @@ async function main() {
     //express 和 socket.io 设置
     app.use(cors());
     app.use(express.json()); // 解析JSON请求体
-    app.use(express.static('public'));
+    app.use(express.static(path.join(__dirname, 'public'))); // 静态文件服务
     const server = http.createServer(app);
     const io = new Server(server, {
         cors: {
