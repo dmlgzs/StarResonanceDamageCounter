@@ -13,6 +13,7 @@ const decoders = cap.decoders;
 const PROTOCOL = decoders.PROTOCOL;
 const print = console.log;
 const app = express();
+const { exec } = require('child_process');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -796,8 +797,30 @@ async function main() {
     }, 50);
 
     server.listen(8989, () => {
-        logger.info('Web Server started at http://localhost:8989');
+        // 自动用默认浏览器打开网页（跨平台兼容）
+        const url = 'http://localhost:8989';
+        logger.info(`Web Server started at ${url}`);
         logger.info('WebSocket Server started');
+
+        
+        let command;
+        switch (process.platform) {
+            case 'darwin': // macOS
+                command = `open ${url}`;
+                break;
+            case 'win32': // Windows
+                command = `start ${url}`;
+                break;
+            default: // Linux 和其他 Unix-like 系统
+                command = `xdg-open ${url}`;
+                break;
+        }
+
+        exec(command, (error) => {
+            if (error) {
+                logger.error(`Failed to open browser: ${error.message}`);
+            }
+        });
     });
 
     logger.info('Welcome!');
