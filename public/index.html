@@ -2690,14 +2690,17 @@
         }
     </script>
     <script>
-        window.onload = function(){
-        const damageTable = document.getElementById('damageTable');
-        const damageTableRows = damageTable.querySelectorAll('tr');
-        damageTableRows.forEach((row, index) => {
-                const height = row.offsetHeight;
+        function updateTableStickyHeader(){
+            const damageTable = document.getElementById('damageTable');
+            const damageTableRows = damageTable.querySelectorAll('tr');
+            damageTableRows.forEach((row, index) => {
+                const prevRow = index > 0 ? damageTableRows[index - 1] : null;
+                const height = prevRow ? prevRow.offsetHeight : 0;
                 row.style.setProperty('--th-top', `${index * height}px`);
             });
         }
+        window.addEventListener('resize', updateTableStickyHeader);
+        document.addEventListener('DOMContentLoaded', updateTableStickyHeader);
     </script>
 </body>
 
