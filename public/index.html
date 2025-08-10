@@ -2693,9 +2693,9 @@
         function updateTableStickyHeader(){
             const damageTable = document.getElementById('damageTable');
             const damageTableRows = damageTable.querySelectorAll('tr');
-            damageTableRows.forEach((row, index) => {
-                const height = row.offsetTop
-                row.style.setProperty('--th-top', `${index * height}px`);
+            damageTableRows.forEach((row) => {
+                const top = row.offsetTop
+                row.style.setProperty('--th-top', `${top}px`);
             });
         }
         window.addEventListener('resize', updateTableStickyHeader);
