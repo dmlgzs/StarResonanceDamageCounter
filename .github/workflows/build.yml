@@ -69,12 +69,9 @@ jobs:
       run: |
         xcopy /E /I public dist\public
 
-    - name: Set short SHA env variable
-      run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
     # 上传构建产物
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: StarResonanceDamageCounter-${{ env.short_sha }}
+        name: StarResonanceDamageCounter
         path: dist
