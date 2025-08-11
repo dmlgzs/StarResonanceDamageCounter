@@ -202,9 +202,16 @@
 
 使用本项目即表示您同意遵守该许可证的条款。
 
+不欢迎某些不遵守本许可证的人。不欢迎某些修改或翻译了开源代码却做闭源、开源一更新闭源就跟进的人。
+
+如果您不认可本许可和附加条款，请不要使用本项目或查阅相关代码。
+
 ## 👥 贡献
 
 欢迎提交 Issue 和 Pull Request 来改进项目！
+
+### 贡献者名单
+[![Contributors](https://contrib.rocks/image?repo=dmlgzs/StarResonanceDamageCounter)](https://github.com/dmlgzs/StarResonanceDamageCounter/graphs/contributors "Contributors")
 
 ## ⭐ 支持
 
