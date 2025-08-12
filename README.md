@@ -1,6 +1,6 @@
 # 星痕共鸣实时战斗数据统计工具 (Star Resonance Damage Counter)
 
-[![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-brightgreen.svg)](https://www.gnu.org/licenses/agpl-3.0.txt)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-10.13.1-orange.svg)](https://pnpm.io/)
 
@@ -198,11 +198,18 @@
 
 ## 📄 许可证
 
-本项目采用 [Mozilla Public License 2.0](LICENSE) 许可证。
+[![](https://www.gnu.org/graphics/agplv3-with-text-162x68.png)](LICENSE)
+
+本项目采用 [GNU AFFERO GENERAL PUBLIC LICENSE version 3](LICENSE) 许可证。
 
 使用本项目即表示您同意遵守该许可证的条款。
 
 不欢迎某些不遵守本许可证的人。不欢迎某些修改或翻译了开源代码却做闭源、开源一更新闭源就跟进的人。
+
+### 衍生软件相关
+
+- 若修改源代码并重新发布，必须在显著位置注明本项目。
+- 若参考内部实现（如服务器识别、协议解析、数据处理等）发布另一个项目，必须在显著位置注明本项目。
 
 如果您不认可本许可和附加条款，请不要使用本项目或查阅相关代码。
 

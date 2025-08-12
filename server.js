@@ -2,8 +2,10 @@ const cap = require('cap');
 const cors = require('cors');
 const readline = require('readline');
 const winston = require("winston");
+const zlib = require('zlib');
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const PacketProcessor = require('./algo/packet');
@@ -500,6 +502,9 @@ class UserDataManager {
                 if (cachedData.profession) {
                     user.setProfession(cachedData.profession);
                 }
+                if (cachedData.fightPoint !== undefined && cachedData.fightPoint !== null) {
+                    user.setFightPoint(cachedData.fightPoint);
+                }
             }
 
             this.users.set(uid, user);
@@ -590,6 +595,14 @@ class UserDataManager {
         if (user.fightPoint != fightPoint) {
             user.setFightPoint(fightPoint);
             this.logger.info(`Found fight point ${fightPoint} for uid ${uid}`);
+
+            // 更新缓存
+            const uidStr = String(uid);
+            if (!this.userCache.has(uidStr)) {
+                this.userCache.set(uidStr, {});
+            }
+            this.userCache.get(uidStr).fightPoint = fightPoint;
+            this.saveUserCacheThrottled();
         }
     }
 
@@ -638,7 +651,7 @@ let isPaused = false;
 
 async function main() {
     print('Welcome to use Damage Counter for Star Resonance!');
-    print('Version: V2.2.2');
+    print('Version: V2.3');
     print('GitHub: https://github.com/dmlgzs/StarResonanceDamageCounter');
     for (let i = 0; i < devices.length; i++) {
         print(i + '.\t' + devices[i].description);
@@ -711,7 +724,7 @@ async function main() {
     //express 和 socket.io 设置
     app.use(cors());
     app.use(express.json()); // 解析JSON请求体
-    app.use(express.static('public'));
+    app.use(express.static(path.join(__dirname, 'public'))); // 静态文件服务
     const server = http.createServer(app);
     const io = new Server(server, {
         cors: {
@@ -909,18 +922,24 @@ async function main() {
     };
 
     //抓包相关
+    const eth_queue = [];
     const c = new Cap();
     const device = devices[num].name;
     const filter = 'ip and tcp';
     const bufSize = 10 * 1024 * 1024;
     const buffer = Buffer.alloc(65535);
     const linkType = c.open(device, filter, bufSize, buffer);
+    if (linkType !== "ETHERNET") {
+        logger.error('WRONG DEVICE!');
+        process.exit(1);
+    }
     c.setMinBytes && c.setMinBytes(0);
     c.on("packet", async function (nbytes, trunc) {
+        eth_queue.push(Buffer.from(buffer));
+    });
+    const processEthPacket = async (frameBuffer) => {
         // logger.debug('packet: length ' + nbytes + ' bytes, truncated? ' + (trunc ? 'yes' : 'no'));
-        if (linkType !== "ETHERNET") return;
 
-        const frameBuffer = Buffer.from(buffer);
         var ethPacket = decoders.Ethernet(frameBuffer);
 
         if (ethPacket.info.type !== PROTOCOL.ETHERNET.IPV4) return;
@@ -1029,7 +1048,17 @@ async function main() {
             }
         }
         tcp_lock.release();
-    });
+    }
+    (async () => {
+        while (true) {
+            if (eth_queue.length) {
+                const pkt = eth_queue.shift();
+                processEthPacket(pkt);
+            } else {
+                await new Promise(r => setTimeout(r, 1));
+            }
+        }
+    })();
 
     //定时清理过期的IP分片缓存
     setInterval(async () => {
@@ -1051,6 +1080,13 @@ async function main() {
             clearTcpCache();
         }
     }, 10000);
+}
+
+if (!zlib.zstdDecompressSync) {
+    // 之前总是有人用旧版本nodejs，不看警告还说数据不准，现在干脆不让旧版用算了
+    // 还有人对着开源代码写闭源，不遵守许可就算了，还要诋毁开源，什么人啊这是
+    print("zstdDecompressSync is not available! Please update your Node.js!");
+    process.exit(1);
 }
 
 main();

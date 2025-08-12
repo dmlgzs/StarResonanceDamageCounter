@@ -3,6 +3,7 @@ const pb = require("./blueprotobuf");
 const Long = require("long");
 const pbjs = require("protobufjs/minimal");
 const pb2 = require("./BlueProtobuf_pb");
+const fs = require('fs');
 
 class BinaryReader {
     constructor(buffer, offset = 0) {
@@ -302,24 +303,30 @@ class PacketProcessor {
     _processSyncContainerData(payloadBuffer) {
         // for some reason protobufjs doesn't work here, we use google-protobuf instead
         try {
-            const syncContainerData = pb2.SyncContainerData.deserializeBinary(payloadBuffer);
+            const syncContainerData = pb.SyncContainerData.decode(payloadBuffer);
             // this.logger.debug(JSON.stringify(syncContainerData, null, 2));
 
-            if (!syncContainerData.hasVdata()) return;
-            const vData = syncContainerData.getVdata();
+            if (!syncContainerData.VData) return;
+            const vData = syncContainerData.VData;
 
-            if (!vData.hasCharid()) return;
-            const playerUid = vData.getCharid();
+            if (!vData.CharId) return;
+            const playerUid = vData.CharId.toNumber();
 
-            if (!vData.hasCharbase()) return;
-            const charBase = vData.getCharbase();
+            if (!vData.CharBase) return;
+            const charBase = vData.CharBase;
 
-            if (!charBase.hasName()) return;
-            this.userDataManager.setName(playerUid, charBase.getName());
+            if (charBase.Name)
+                this.userDataManager.setName(playerUid, charBase.Name);
 
-            if (!charBase.hasFightpoint()) return;
-            this.userDataManager.setFightPoint(playerUid, charBase.getFightpoint());
+            if (charBase.FightPoint)
+                this.userDataManager.setFightPoint(playerUid, charBase.FightPoint);
+
+            if (!vData.ProfessionList) return;
+            const professionList = vData.ProfessionList;
+            if (professionList.CurProfessionId)
+                this.userDataManager.setProfession(playerUid, getProfessionNameFromId(professionList.CurProfessionId));
         } catch (err) {
+            fs.writeFileSync('./SyncContainerData.dat', payloadBuffer);
             this.logger.warn(`Failed to decode SyncContainerData for player ${currentUserUuid.shiftRight(16)}. Please report to developer`);
             throw err;
         }
