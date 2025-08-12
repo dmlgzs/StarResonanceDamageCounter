@@ -1,15 +1,22 @@
 {
   "name": "star-resonance-damage-counter",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "description": "Damage Counter for Star Resonance",
   "main": "server.js",
+  "bin": {
+    "star-resonance-damage-counter": "server.js"
+  },
+  "engines": {
+    "node": "^22.15.0"
+  },
   "scripts": {
+    "build": "pkg .",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Dimole <dmlgzs@qq.com>",
-  "license": "MPL-2.0",
+  "license": "AGPL-3.0",
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
     "cap": "^0.2.1",
@@ -22,6 +29,18 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@yao-pkg/pkg": "^6.6.0",
     "protobufjs-cli": "^1.1.3"
+  },
+  "pkg": {
+    "scripts": "server.js",
+    "assets": [
+      "public/**/*",
+      "node_modules/cap/**/*"
+    ],
+    "targets": [
+      "node22-win-x64"
+    ],
+    "outputPath": "dist"
   }
 }

@@ -834,20 +834,8 @@
 </head>
 
 <body>
-    <h1>🎯 星痕共鸣实时战斗数据展示 V2.2.2</h1>
-    <div style="margin: 20px 0;">
-        <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
-        <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
-            <option value="uid">按UID排序 (升序)</option>
-            <option value="takenDamage">按承伤排序 (降序)</option>
-            <option value="damage">按总伤害排序 (降序)</option>
-            <option value="dps">按总DPS排序 (降序)</option>
-            <option value="realtimeDpsMax">按最大瞬时DPS排序 (降序)</option>
-            <option value="healing">按总治疗排序 (降序)</option>
-            <option value="hps">按总HPS排序 (降序)</option>
-            <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
-        </select>
-    </div>
+    <h1>🎯 星痕共鸣实时战斗数据展示 V2.3</h1>
+    <div style="margin: 20px 0;"></div>
     <button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
     <button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
     <button class="main-button" onclick="toggleDarkMode()">🌙 夜间模式</button>
@@ -946,7 +934,21 @@
         <div id="dpsChart" style="width: 100%; height: 350px;"></div>
     </div>
 
-            <div class="card">
+        <div class="card">
+            <div style="margin: 20px 0;">
+                <label for="sortSelect" style="margin-right: 10px; font-weight: bold;">排序方式:</label>
+                <select id="sortSelect" onchange="updateSortMode()" style="padding: 8px 12px; font-size: 14px; border-radius: 5px; border: 1px solid #ddd; background-color: white;">
+                    <option value="uid">按UID排序 (升序)</option>
+                    <option value="fightPoint">按评分排序 (降序)</option>
+                    <option value="takenDamage">按承伤排序 (降序)</option>
+                    <option value="damage">按总伤害排序 (降序)</option>
+                    <option value="dps">按总DPS排序 (降序)</option>
+                    <option value="realtimeDpsMax">按最大瞬时DPS排序 (降序)</option>
+                    <option value="healing">按总治疗排序 (降序)</option>
+                    <option value="hps">按总HPS排序 (降序)</option>
+                    <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
+                </select>
+            </div>
             <!-- 数据组显示控制 -->
             <div class="data-group-controls">
                 <button id="damageGroupBtn" class="data-group-button active" onclick="toggleDataGroup('damage')">
@@ -1824,6 +1826,9 @@
                     break;
                 case 'realtimeHpsMax':
                     userArray.sort((a, b) => b.realtime_hps_max - a.realtime_hps_max);
+                    break;
+                case 'fightPoint':
+                    userArray.sort((a, b) => b.fightPoint - a.fightPoint);
                     break;
                 default:
                     userArray.sort((a, b) => a.id - b.id);
