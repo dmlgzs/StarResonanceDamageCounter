@@ -724,7 +724,7 @@ async function main() {
     //express 和 socket.io 设置
     app.use(cors());
     app.use(express.json()); // 解析JSON请求体
-    app.use(express.static(path.join(__dirname, 'public'))); // 静态文件服务
+    app.use(express.static(path.join(process.cwd(), 'public'))); // 静态文件服务
     const server = http.createServer(app);
     const io = new Server(server, {
         cors: {
@@ -811,6 +811,7 @@ async function main() {
 
     server.listen(8989, () => {
         // 自动用默认浏览器打开网页（跨平台兼容）
+        logger.info(`Static path: ${path.join(process.cwd(), 'public')}`);
         const url = 'http://localhost:8989';
         logger.info(`Web Server started at ${url}`);
         logger.info('WebSocket Server started');
