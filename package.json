@@ -1,6 +1,6 @@
 {
   "name": "star-resonance-damage-counter",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "description": "Damage Counter for Star Resonance",
   "main": "server.js",
   "bin": {

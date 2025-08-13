@@ -37,6 +37,12 @@ class BinaryReader {
         return value;
     }
 
+    readUInt32LE() {
+        const value = this.buffer.readUInt32LE(this.offset);
+        this.offset += 4;
+        return value;
+    }
+
     peekInt32() {
         return this.buffer.readInt32BE(this.offset);
     }
@@ -94,6 +100,16 @@ const AttrType = {
     AttrName: 0x01,
     AttrProfessionId: 0xdc,
     AttrFightPoint: 0x272e,
+    AttrLevel: 0x2710,
+    AttrRankLevel: 0x274c,
+    AttrCri: 0x2b66,
+    AttrLucky: 0x2b7a,
+    AttrHp: 0x2c2e,
+    AttrMaxHp: 0x2c38,
+    AttrElementFlag: 0x646d6c,
+    AttrReductionLevel: 0x64696d,
+    AttrReduntionId: 0x6f6c65,
+    AttrEnergyFlag: 0x543cd3c6,
 };
 
 const ProfessionType = {
@@ -144,17 +160,17 @@ const isUuidPlayer = (uuid) => {
 };
 
 const doesStreamHaveIdentifier = (reader) => {
-    let identifier = reader.readInt32();
+    let identifier = reader.readUInt32LE();
     reader.readInt32();
     if (identifier !== 0xfffffffe) return false;
     identifier = reader.readInt32();
     reader.readInt32();
-    if (identifier !== 0xfffffffd) return false;
+    //if (identifier !== 0xfffffffd) return false;
     return true;
 };
 
 const streamReadString = (reader) => {
-    const length = reader.readInt32();
+    const length = reader.readUInt32LE();
     reader.readInt32();
     const buffer = reader.readBytes(length);
     reader.readInt32();
@@ -221,7 +237,7 @@ class PacketProcessor {
                     //玩家被治疗
                     if (isAttackerPlayer) {
                         //只记录玩家造成的治疗
-                        this.userDataManager.addHealing(attackerUuid.toNumber(), skillId, damage.toNumber(), isCrit, isLucky);
+                        this.userDataManager.addHealing(attackerUuid.toNumber(), skillId, damage.toNumber(), isCrit, isLucky, targetUuid.toNumber());
                     }
                 } else {
                     //玩家受到伤害
@@ -305,12 +321,23 @@ class PacketProcessor {
         try {
             const syncContainerData = pb.SyncContainerData.decode(payloadBuffer);
             // this.logger.debug(JSON.stringify(syncContainerData, null, 2));
+            // fs.writeFileSync('SyncContainerData.json', JSON.stringify(syncContainerData, null, 2));
 
             if (!syncContainerData.VData) return;
             const vData = syncContainerData.VData;
 
             if (!vData.CharId) return;
             const playerUid = vData.CharId.toNumber();
+
+            if (vData.RoleLevel && vData.RoleLevel.Level)
+                this.userDataManager.setAttrKV(playerUid, 'level', vData.RoleLevel.Level);
+
+            if (vData.Attr && vData.Attr.CurHp)
+                this.userDataManager.setAttrKV(playerUid, 'hp', vData.Attr.CurHp.toNumber());
+
+            if (vData.Attr && vData.Attr.MaxHp)
+                this.userDataManager.setAttrKV(playerUid, 'max_hp', vData.Attr.MaxHp.toNumber());
+
 
             if (!vData.CharBase) return;
             const charBase = vData.CharBase;
@@ -337,17 +364,18 @@ class PacketProcessor {
 
         const syncContainerDirtyData = pb.SyncContainerDirtyData.decode(payloadBuffer);
         if (!syncContainerDirtyData.VData || !syncContainerDirtyData.VData.Buffer) return;
+        this.logger.debug(syncContainerDirtyData.VData.Buffer.toString('hex'));
         const messageReader = new BinaryReader(Buffer.from(syncContainerDirtyData.VData.Buffer));
 
         if (!doesStreamHaveIdentifier(messageReader)) return;
 
-        let fieldIndex = messageReader.readInt32();
+        let fieldIndex = messageReader.readUInt32LE();
         messageReader.readInt32();
         switch (fieldIndex) {
             case 2: // CharBase
                 if (!doesStreamHaveIdentifier(messageReader)) break;
 
-                fieldIndex = messageReader.readInt32();
+                fieldIndex = messageReader.readUInt32LE();
                 messageReader.readInt32();
                 switch (fieldIndex) {
                     case 5: // Name
@@ -356,9 +384,45 @@ class PacketProcessor {
                         this.userDataManager.setName(currentUserUuid.shiftRight(16).toNumber(), playerName);
                         break;
                     case 35: // FightPoint
-                        const fightPoint = messageReader.readInt32();
+                        const fightPoint = messageReader.readUInt32LE();
                         messageReader.readInt32();
                         this.userDataManager.setFightPoint(currentUserUuid.shiftRight(16).toNumber(), fightPoint);
+                        break;
+                    default:
+                        // unhandle
+                        break;
+                }
+                break;
+            case 16: // UserFightAttr
+                if (!doesStreamHaveIdentifier(messageReader)) break;
+
+                fieldIndex = messageReader.readUInt32LE();
+                messageReader.readInt32();
+                switch (fieldIndex) {
+                    case 1: // CurHp
+                        const curHp = messageReader.readUInt32LE();
+                        this.userDataManager.setAttrKV(currentUserUuid.shiftRight(16).toNumber(), 'hp', curHp);
+                        break;
+                    case 2: // MaxHp
+                        const maxHp = messageReader.readUInt32LE();
+                        this.userDataManager.setAttrKV(currentUserUuid.shiftRight(16).toNumber(), 'max_hp', maxHp);
+                        break;
+                    default:
+                        // unhandle
+                        break;
+                }
+                break;
+            case 61: // ProfessionList
+                if (!doesStreamHaveIdentifier(messageReader)) break;
+
+                fieldIndex = messageReader.readUInt32LE();
+                messageReader.readInt32();
+                switch (fieldIndex) {
+                    case 1: // CurProfessionId
+                        const curProfessionId = messageReader.readUInt32LE();
+                        messageReader.readInt32();
+                        if (curProfessionId)
+                            this.userDataManager.setProfession(currentUserUuid.shiftRight(16).toNumber(), getProfessionNameFromId(curProfessionId));
                         break;
                     default:
                         // unhandle
@@ -407,8 +471,44 @@ class PacketProcessor {
                         const playerFightPoint = reader.int32();
                         this.userDataManager.setFightPoint(playerUuid.toNumber(), playerFightPoint);
                         break;
+                    case AttrType.AttrLevel:
+                        const playerLevel = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'level', playerLevel);
+                        break;
+                    case AttrType.AttrRankLevel:
+                        const playerRankLevel = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'rank_level', playerRankLevel);
+                        break;
+                    case AttrType.AttrCri:
+                        const playerCri = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'cri', playerCri);
+                        break;
+                    case AttrType.AttrLucky:
+                        const playerLucky = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'lucky', playerLucky);
+                        break;
+                    case AttrType.AttrHp:
+                        const playerHp = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'hp', playerHp);
+                        break;
+                    case AttrType.AttrMaxHp:
+                        const playerMaxHp = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'max_hp', playerMaxHp);
+                        break;
+                    case AttrType.AttrElementFlag:
+                        const playerElementFlag = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'element_flag', playerElementFlag);
+                        break;
+                    case AttrType.AttrEnergyFlag:
+                        const playerEnergyFlag = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'energy_flag', playerEnergyFlag);
+                        break;
+                    case AttrType.AttrReductionLevel:
+                        const playerReductionLevel = reader.int32();
+                        this.userDataManager.setAttrKV(playerUuid.toNumber(), 'reduction_level', playerReductionLevel);
+                        break;
                     default:
-                        // this.logger.debug(`Found unknown attrId ${attr.Id}`);
+                        // this.logger.debug(`Found unknown attrId ${attr.Id} ${attr.RawData.toString('base64')}`);
                         break;
                 }
             }
