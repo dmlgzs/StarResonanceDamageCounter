@@ -778,6 +778,25 @@ async function main() {
     app.use(express.json()); // 解析JSON请求体
     app.use(express.static(path.join(process.cwd(), 'public'))); // 静态文件服务
     const server = http.createServer(app);
+    // 启动服务器（支持端口占用时自动尝试其他端口）
+    const startServer = async (portToTry) => {
+        return new Promise((resolve, reject) => {
+            const serverInstance = server.listen(portToTry, () => {
+                resolve(serverInstance);
+            });
+            
+            serverInstance.on('error', (err) => {
+                if (err.code === 'EADDRINUSE') {
+                    logger.warn(`Port ${portToTry} is already in use, trying next port...`);
+                    // 尝试下一个端口
+                    serverInstance.close();
+                    resolve(null);
+                } else {
+                    reject(err);
+                }
+            });
+        });
+    };
     const io = new Server(server, {
         cors: {
             origin: "*",
@@ -861,32 +880,58 @@ async function main() {
         }
     }, 50);
 
-    server.listen(port, () => {
-        // 自动用默认浏览器打开网页（跨平台兼容）
-        const url = `http://localhost:${port}`;
-        logger.info(`Web Server started at ${url}`);
-        logger.info('WebSocket Server started');
+    // 尝试启动服务器（最多尝试20个端口）
+    let actualPort = port;
+    let serverStarted = false;
+    const maxAttempts = 20;
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            const serverInstance = await startServer(actualPort);
+            
+            if (serverInstance) {
+                serverStarted = true;
+                const url = `http://localhost:${actualPort}`;
+                logger.info(`Web Server started at ${url}`);
+                logger.info('WebSocket Server started');
 
-        
-        let command;
-        switch (process.platform) {
-            case 'darwin': // macOS
-                command = `open ${url}`;
-                break;
-            case 'win32': // Windows
-                command = `start ${url}`;
-                break;
-            default: // Linux 和其他 Unix-like 系统
-                command = `xdg-open ${url}`;
-                break;
-        }
+                // 自动用默认浏览器打开网页（跨平台兼容）
+                let command;
+                switch (process.platform) {
+                    case 'darwin': // macOS
+                        command = `open ${url}`;
+                        break;
+                    case 'win32': // Windows
+                        command = `start ${url}`;
+                        break;
+                    default: // Linux 和其他 Unix-like 系统
+                        command = `xdg-open ${url}`;
+                        break;
+                }
 
-        exec(command, (error) => {
-            if (error) {
-                logger.error(`Failed to open browser: ${error.message}`);
+                exec(command, (error) => {
+                    if (error) {
+                        logger.error(`Failed to open browser: ${error.message}`);
+                    }
+                });
+                break; // 成功启动，跳出循环
+            } else {
+                // 端口被占用，尝试下一个端口
+                actualPort++;
+                if (actualPort > 65535) {
+                    actualPort = 1; // 如果超过最大端口号，从1重新开始
+                }
             }
-        });
-    });
+        } catch (err) {
+            logger.error(`Failed to start server: ${err.message}`);
+            process.exit(1);
+        }
+    }
+    
+    if (!serverStarted) {
+        logger.error(`Failed to start server after ${maxAttempts} attempts. All ports in range are occupied?`);
+        process.exit(1);
+    }
 
     logger.info('Welcome!');
     logger.info('Attempting to find the game server, please wait!');
