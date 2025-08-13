@@ -691,14 +691,21 @@ async function main() {
         print(i + '.\t' + devices[i].description);
     }
 
-    // 从命令行参数获取设备号和日志级别
+    // 从命令行参数获取设备号、日志级别和端口号
     const args = process.argv.slice(2);
     let num = args[0];
     let log_level = args[1];
+    let port = args[2];
 
     // 参数验证函数
     function isValidLogLevel(level) {
         return ['info', 'debug'].includes(level);
+    }
+
+    // 验证端口号是否有效
+    function isValidPort(p) {
+        const portNum = parseInt(p);
+        return !isNaN(portNum) && portNum > 0 && portNum <= 65535;
     }
 
     // 如果命令行没传或者不合法，使用交互
@@ -716,6 +723,17 @@ async function main() {
             print('Invalid log level!');
             process.exit(1);
         }
+    }
+    if (port === undefined || !isValidPort(port)) {
+        const portInput = await ask('Please enter port number (default 8989): ') || '8989';
+        if (isValidPort(portInput)) {
+            port = parseInt(portInput);
+        } else {
+            print('Invalid port number! Using default 8989.');
+            port = 8989;
+        }
+    } else {
+        port = parseInt(port);
     }
 
     rl.close();
@@ -843,10 +861,9 @@ async function main() {
         }
     }, 50);
 
-    server.listen(8989, () => {
+    server.listen(port, () => {
         // 自动用默认浏览器打开网页（跨平台兼容）
-        logger.info(`Static path: ${path.join(process.cwd(), 'public')}`);
-        const url = 'http://localhost:8989';
+        const url = `http://localhost:${port}`;
         logger.info(`Web Server started at ${url}`);
         logger.info('WebSocket Server started');
 
