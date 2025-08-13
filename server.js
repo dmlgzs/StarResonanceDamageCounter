@@ -249,6 +249,7 @@ class UserData {
         this.skillUsage = new Map(); // 技能使用情况
         this.fightPoint = 0; // 总评分
         this.subProfession = '';
+        this.attr = {};
     }
 
     /** 添加伤害记录
@@ -343,6 +344,8 @@ class UserData {
             profession: this.profession + (this.subProfession ? `-${this.subProfession}` : ''),
             name: this.name,
             fightPoint: this.fightPoint,
+            hp: this.attr.hp,
+            max_hp: this.attr.max_hp,
         };
     }
 
@@ -405,6 +408,14 @@ class UserData {
      */
     setFightPoint(fightPoint) {
         this.fightPoint = fightPoint;
+    }
+
+    /** 设置额外数据
+     * @param {string} key
+     * @param {any} value
+     */
+    setAttrKV(key, value) {
+        this.attr[key] = value;
     }
 
     /** 重置数据 预留 */
@@ -531,10 +542,19 @@ class UserDataManager {
      * @param {number} healing - 治疗值
      * @param {boolean} isCrit - 是否为暴击
      * @param {boolean} [isLucky] - 是否为幸运
+     * @param {number} targetUid - 被治疗的用户ID
      */
-    addHealing(uid, skillId, healing, isCrit, isLucky) {
+    addHealing(uid, skillId, healing, isCrit, isLucky, targetUid) {
         const user = this.getUser(uid);
         user.addHealing(skillId, healing, isCrit, isLucky);
+        const targetUser = this.getUser(targetUid);
+        if (targetUser.attr.hp && typeof targetUser.attr.hp == 'number') {
+            if (targetUser.attr.max_hp && targetUser.attr.max_hp - targetUser.attr.hp < healing) {
+                targetUser.attr.hp = targetUser.attr.max_hp;
+            } else {
+                targetUser.attr.hp += healing;
+            }
+        }
     }
 
     /** 添加承伤记录
@@ -544,6 +564,9 @@ class UserDataManager {
     addTakenDamage(uid, damage) {
         const user = this.getUser(uid);
         user.addTakenDamage(damage);
+        if (user.attr.hp && typeof user.attr.hp == 'number') {
+            user.attr.hp = damage > user.attr.hp ? 0 : user.attr.hp - damage;
+        }
     }
 
     /** 设置用户职业
@@ -606,6 +629,16 @@ class UserDataManager {
         }
     }
 
+    /** 设置额外数据
+     * @param {number} uid - 用户ID
+     * @param {string} key
+     * @param {any} value
+     */
+    setAttrKV(uid, key, value) {
+        const user = this.getUser(uid);
+        user.attr[key] = value;
+    }
+
     /** 更新所有用户的实时DPS和HPS */
     updateAllRealtimeDps() {
         for (const user of this.users.values()) {
@@ -622,7 +655,8 @@ class UserDataManager {
             uid: user.uid,
             name: user.name,
             profession: user.profession,
-            skills: user.getSkillSummary()
+            skills: user.getSkillSummary(),
+            attr: user.attr,
         };
     }
 
@@ -651,7 +685,7 @@ let isPaused = false;
 
 async function main() {
     print('Welcome to use Damage Counter for Star Resonance!');
-    print('Version: V2.3');
+    print('Version: V2.5');
     print('GitHub: https://github.com/dmlgzs/StarResonanceDamageCounter');
     for (let i = 0; i < devices.length; i++) {
         print(i + '.\t' + devices[i].description);

@@ -462,7 +462,7 @@
         
         .skill-user-info-item {
             flex: 1;
-            min-width: 200px;
+            min-width: 100px;
         }
         
         .skill-user-info-label {
@@ -834,7 +834,7 @@
 </head>
 
 <body>
-    <h1>🎯 星痕共鸣实时战斗数据展示 V2.3</h1>
+    <h1>🎯 星痕共鸣实时战斗数据展示 V2.5</h1>
     <div style="margin: 20px 0;"></div>
     <button class="main-button" onclick="clearData()">✨ 清空统计数据</button>
     <button class="main-button" id="pauseButton" onclick="togglePause()">⏸️ 暂停统计</button>
@@ -884,6 +884,14 @@
                     <div class="skill-user-info-item">
                         <div class="skill-user-info-label">职业</div>
                         <div class="skill-user-info-value" id="skillUserProfession">-</div>
+                    </div>
+                    <div class="skill-user-info-item">
+                        <div class="skill-user-info-label">生体元等级</div>
+                        <div class="skill-user-info-value" id="userLevel">-</div>
+                    </div>
+                    <div class="skill-user-info-item">
+                        <div class="skill-user-info-label">臂章等级</div>
+                        <div class="skill-user-info-value" id="userRankLevel">-</div>
                     </div>
                     <div class="skill-user-info-item">
                         <div class="skill-user-info-label">技能数量</div>
@@ -947,6 +955,7 @@
                     <option value="healing">按总治疗排序 (降序)</option>
                     <option value="hps">按总HPS排序 (降序)</option>
                     <option value="realtimeHpsMax">按最大瞬时HPS排序 (降序)</option>
+                    <option value="hp_min">按剩余HP排序 (升序)</option>
                 </select>
             </div>
             <!-- 数据组显示控制 -->
@@ -969,6 +978,7 @@
                             <th rowspan="2" title="角色昵称/自定义昵称">角色昵称</th>
                             <th rowspan="2" title="角色职业">职业</th>
                             <th rowspan="2" title="角色评分">评分</th>
+                            <th rowspan="2" title="角色血量">HP</th>
                             <th rowspan="2" title="角色在战斗中受到的伤害">承伤</th>
                             <th rowspan="2" title="角色在战斗中的暴击触发率">暴击率</th>
                             <th rowspan="2" title="角色在战斗中的幸运触发率">幸运率</th>
@@ -1197,6 +1207,8 @@
                 `${skillData.name || `UID:${skillData.uid}` } - 技能分析`;
             document.getElementById('skillUserNickname').textContent = skillData.name;
             document.getElementById('skillUserProfession').textContent = skillData.profession;
+            document.getElementById('userLevel').textContent = skillData.attr ? skillData.attr.level || '未知' : '未知';
+            document.getElementById('userRankLevel').textContent = skillData.attr ? skillData.attr.rank_level || '未知' : '未知';
             document.getElementById('skillCount').textContent = 
                 Object.keys(skillData.skills).length;
 
@@ -1680,6 +1692,7 @@
                 const otherCells = [
                     user.profession || '未知',
                     user.fightPoint,
+                    user.hp ?? '未知',
                     user.taken_damage,
                     `${(crit_rate * 100).toFixed(2)}%`,
                     `${(lucky_rate * 100).toFixed(2)}%`,
@@ -1829,6 +1842,9 @@
                     break;
                 case 'fightPoint':
                     userArray.sort((a, b) => b.fightPoint - a.fightPoint);
+                    break;
+                case 'hp_min':
+                    userArray.sort((a, b) => a.hp - b.hp);
                     break;
                 default:
                     userArray.sort((a, b) => a.id - b.id);
