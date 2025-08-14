@@ -1,0 +1,13 @@
+**/.git
+**/node_modules
+**/dist
+**/*.json
+**/*.min.js
+**/algo/blueprotobuf.js
+**/algo/BlueProtobuf_pb.js
+**/bak
+**/*.md
+**/*.yaml
+**/*.yml
+**/.vscode
+**/*.dat

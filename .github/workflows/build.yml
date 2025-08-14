@@ -48,13 +48,11 @@ jobs:
     - name: Generate commit.txt
       run: echo ${{ github.sha }} > dist/commit.txt
 
-
     # 构建 Windows EXE
     - name: Build Windows executable
       run: |
         $outputName = "dist/star-resonance-damage-counter.exe"
-        pnpm dlx @yao-pkg/pkg ./server.js `
-          --targets node22-win-x64 `
+        pnpm build `
           --output $outputName `
           --options max_old_space_size=4096
         if (Test-Path $outputName) {
@@ -63,11 +61,6 @@ jobs:
           Write-Error "EXE file not found!"
           exit 1
         }
-
-    # 复制 public 到 dist 下
-    - name: Copy static assets
-      run: |
-        xcopy /E /I public dist\public
 
     # 上传构建产物
     - name: Upload artifact

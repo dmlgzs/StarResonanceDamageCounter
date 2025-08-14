@@ -1,8 +1,8 @@
-const zlib = require("zlib");
-const pb = require("./blueprotobuf");
-const Long = require("long");
-const pbjs = require("protobufjs/minimal");
-const pb2 = require("./BlueProtobuf_pb");
+const zlib = require('zlib');
+const pb = require('./blueprotobuf');
+const Long = require('long');
+const pbjs = require('protobufjs/minimal');
+const pb2 = require('./BlueProtobuf_pb');
 const fs = require('fs');
 
 class BinaryReader {
@@ -129,29 +129,29 @@ const ProfessionType = {
 const getProfessionNameFromId = (professionId) => {
     switch (professionId) {
         case ProfessionType.雷影剑士:
-            return "雷影剑士";
+            return '雷影剑士';
         case ProfessionType.冰魔导师:
-            return "冰魔导师";
+            return '冰魔导师';
         case ProfessionType.涤罪恶火·战斧:
-            return "涤罪恶火·战斧";
+            return '涤罪恶火·战斧';
         case ProfessionType.青岚骑士:
-            return "青岚骑士";
+            return '青岚骑士';
         case ProfessionType.森语者:
-            return "森语者";
+            return '森语者';
         case ProfessionType.雷霆一闪·手炮:
-            return "雷霆一闪·手炮";
+            return '雷霆一闪·手炮';
         case ProfessionType.巨刃守护者:
-            return "巨刃守护者";
+            return '巨刃守护者';
         case ProfessionType.暗灵祈舞·仪刀·仪仗:
-            return "暗灵祈舞·仪刀/仪仗";
+            return '暗灵祈舞·仪刀/仪仗';
         case ProfessionType.神射手:
-            return "神射手";
+            return '神射手';
         case ProfessionType.神盾骑士:
-            return "神盾骑士";
+            return '神盾骑士';
         case ProfessionType.灵魂乐手:
-            return "灵魂乐手";
+            return '灵魂乐手';
         default:
-            return "";
+            return '';
     }
 };
 
@@ -175,7 +175,7 @@ const streamReadString = (reader) => {
     const buffer = reader.readBytes(length);
     reader.readInt32();
     return buffer.toString();
-}
+};
 
 let currentUserUuid = Long.ZERO;
 
@@ -187,7 +187,7 @@ class PacketProcessor {
 
     _decompressPayload(buffer) {
         if (!zlib.zstdDecompressSync) {
-            this.logger.warn("zstdDecompressSync is not available! Please check your Node.js version!");
+            this.logger.warn('zstdDecompressSync is not available! Please check your Node.js version!');
             return;
         }
         return zlib.zstdDecompressSync(buffer);
@@ -251,17 +251,24 @@ class PacketProcessor {
                     //非玩家受到伤害
                     if (isAttackerPlayer) {
                         //只记录玩家造成的伤害
-                        this.userDataManager.addDamage(attackerUuid.toNumber(), skillId, damage.toNumber(), isCrit, isLucky, hpLessenValue.toNumber());
+                        this.userDataManager.addDamage(
+                            attackerUuid.toNumber(),
+                            skillId,
+                            damage.toNumber(),
+                            isCrit,
+                            isLucky,
+                            hpLessenValue.toNumber(),
+                        );
                     }
                 }
             }
 
             let extra = [];
-            if (isCrit) extra.push("Crit");
-            if (isLucky) extra.push("Lucky");
-            if (extra.length === 0) extra = ["Normal"];
+            if (isCrit) extra.push('Crit');
+            if (isLucky) extra.push('Lucky');
+            if (extra.length === 0) extra = ['Normal'];
 
-            const actionType = isHeal ? "Healing" : "Damage";
+            const actionType = isHeal ? 'Healing' : 'Damage';
 
             let infoStr = `Src: ${attackerUuid.toString()}`;
             if (isAttackerPlayer) {
@@ -269,7 +276,7 @@ class PacketProcessor {
                 if (attacker.name) {
                     infoStr = `Src: ${attacker.name}`;
                 } else {
-                    infoStr += " (player)";
+                    infoStr += ' (player)';
                 }
             }
 
@@ -279,12 +286,14 @@ class PacketProcessor {
                 if (target.name) {
                     targetName = target.name;
                 } else {
-                    targetName += " (player)";
+                    targetName += ' (player)';
                 }
             }
             infoStr += ` Tgt: ${targetName}`;
 
-            this.logger.info(`${infoStr} Skill/Buff: ${skillId} ${actionType}: ${damage} ${isHeal ? "" : ` HpLessen: ${hpLessenValue}`} Extra: ${extra.join("|")}`);
+            this.logger.info(
+                `${infoStr} Skill/Buff: ${skillId} ${actionType}: ${damage} ${isHeal ? '' : ` HpLessen: ${hpLessenValue}`} Extra: ${extra.join('|')}`,
+            );
         }
     }
 
@@ -307,7 +316,7 @@ class PacketProcessor {
         const uuid = aoiSyncToMeDelta.Uuid;
         if (uuid && !currentUserUuid.eq(uuid)) {
             currentUserUuid = uuid;
-            this.logger.info("Got player UUID! UUID: " + currentUserUuid + " UID: " + currentUserUuid.shiftRight(16));
+            this.logger.info('Got player UUID! UUID: ' + currentUserUuid + ' UID: ' + currentUserUuid.shiftRight(16));
         }
 
         const aoiSyncDelta = aoiSyncToMeDelta.BaseDelta;
@@ -329,24 +338,18 @@ class PacketProcessor {
             if (!vData.CharId) return;
             const playerUid = vData.CharId.toNumber();
 
-            if (vData.RoleLevel && vData.RoleLevel.Level)
-                this.userDataManager.setAttrKV(playerUid, 'level', vData.RoleLevel.Level);
+            if (vData.RoleLevel && vData.RoleLevel.Level) this.userDataManager.setAttrKV(playerUid, 'level', vData.RoleLevel.Level);
 
-            if (vData.Attr && vData.Attr.CurHp)
-                this.userDataManager.setAttrKV(playerUid, 'hp', vData.Attr.CurHp.toNumber());
+            if (vData.Attr && vData.Attr.CurHp) this.userDataManager.setAttrKV(playerUid, 'hp', vData.Attr.CurHp.toNumber());
 
-            if (vData.Attr && vData.Attr.MaxHp)
-                this.userDataManager.setAttrKV(playerUid, 'max_hp', vData.Attr.MaxHp.toNumber());
-
+            if (vData.Attr && vData.Attr.MaxHp) this.userDataManager.setAttrKV(playerUid, 'max_hp', vData.Attr.MaxHp.toNumber());
 
             if (!vData.CharBase) return;
             const charBase = vData.CharBase;
 
-            if (charBase.Name)
-                this.userDataManager.setName(playerUid, charBase.Name);
+            if (charBase.Name) this.userDataManager.setName(playerUid, charBase.Name);
 
-            if (charBase.FightPoint)
-                this.userDataManager.setFightPoint(playerUid, charBase.FightPoint);
+            if (charBase.FightPoint) this.userDataManager.setFightPoint(playerUid, charBase.FightPoint);
 
             if (!vData.ProfessionList) return;
             const professionList = vData.ProfessionList;
