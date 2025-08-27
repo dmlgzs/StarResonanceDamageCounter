@@ -785,6 +785,13 @@ class UserDataManager {
         return result;
     }
 
+    /** 移除敌方缓存数据 */
+    deleteEnemyData(id) {
+        this.enemyCache.name.delete(id);
+        this.enemyCache.hp.delete(id);
+        this.enemyCache.maxHp.delete(id);
+    }
+
     /** 清空敌方缓存 */
     refreshEnemyCache() {
         this.enemyCache.name.clear();
