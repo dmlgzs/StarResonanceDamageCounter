@@ -361,6 +361,9 @@ class PacketProcessor {
                         );
                     }
                 }
+                if (isDead) {
+                    this.userDataManager.deleteEnemyData(targetUuid.toNumber())
+                }
             }
 
             let extra = [];
