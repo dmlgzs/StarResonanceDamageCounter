@@ -1,3 +1,4 @@
+'use strict';
 const zlib = require('zlib');
 const pb = require('./blueprotobuf');
 const Long = require('long');

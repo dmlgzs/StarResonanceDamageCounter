@@ -1,4 +1,5 @@
 // i18n functionality
+'use strict';
 // 检测系统语言并返回最合适的语言代码
 function getSystemLanguage() {
     const browserLang = navigator.language || 'en';
