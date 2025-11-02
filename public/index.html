@@ -1443,7 +1443,13 @@
                     };
                 });
 
-                const validEnemies = parsed.filter((enemy) => (enemy.name || enemy.hp || enemy.maxHp) && !String(enemy.name).endsWith('-共鸣'));
+                const validEnemies = parsed.filter(
+                    (enemy) =>
+                        (enemy.name || enemy.hp || enemy.maxHp) &&
+                        !String(enemy.name).endsWith('-共鸣') &&
+                        !String(enemy.name).startsWith('宠物-') &&
+                        String(enemy.name) !== '基础音响',
+                );
 
                 if (validEnemies.length === 0) {
                     if (enemySummary)
@@ -1484,7 +1490,7 @@
                     item.innerHTML = `
                         <div class="enemy-item-content">
                             <div class="enemy-item-header">
-                                <div class="enemy-name" title="${escapeHtml(enemy.name)} #${escapeHtml(enemy.id)}">${escapeHtml(enemy.name)} <span class="enemy-id">#${escapeHtml(enemy.id)}</span></div>
+                                <div class="enemy-name" title="${getTranslationByReplace(escapeHtml(enemy.name))} #${escapeHtml(enemy.id)}">${getTranslationByReplace(escapeHtml(enemy.name))} <span class="enemy-id">#${escapeHtml(enemy.id)}</span></div>
                                 <div class="enemy-hp-value">${hpDisplay} <span class="${statusClass}">(${statusText})</span></div>
                             </div>
                         </div>
