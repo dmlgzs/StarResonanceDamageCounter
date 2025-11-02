@@ -489,6 +489,7 @@ class UserDataManager {
 
         this.logLock = new Lock();
         this.logDirExist = new Set();
+        this.logStreams = new Map();
 
         this.enemyCache = {
             name: new Map(),
@@ -555,6 +556,8 @@ class UserDataManager {
 
     /** 强制立即保存用户缓存 - 用于程序退出等场景 */
     async forceUserCacheSave() {
+        isPaused = true;
+        this.logger.info('Saving user cache...');
         await this.saveAllUserData(this.users, this.startTime);
         if (this.saveThrottleTimer) {
             clearTimeout(this.saveThrottleTimer);
@@ -563,6 +566,13 @@ class UserDataManager {
         if (this.pendingSave) {
             await this.saveUserCache();
             this.pendingSave = false;
+        }
+
+        // 关闭全部的日志流
+        this.logger.info(`Waiting for ${this.logStreams.size} log stream to close`);
+        for (const [logFile, gzip] of this.logStreams.entries()) {
+            gzip.end();
+            await new Promise((r) => gzip.on('close', r));
         }
     }
 
@@ -656,7 +666,7 @@ class UserDataManager {
         if (isPaused) return;
 
         const logDir = path.join('./logs', String(this.startTime));
-        const logFile = path.join(logDir, 'fight.log');
+        const logFile = path.join(logDir, 'fight.log.gz');
         const timestamp = new Date().toISOString();
         const logEntry = `[${timestamp}] ${log}\n`;
 
@@ -665,14 +675,18 @@ class UserDataManager {
         await this.logLock.acquire();
         try {
             if (!this.logDirExist.has(logDir)) {
-                try {
-                    await fsPromises.access(logDir);
-                } catch (error) {
-                    await fsPromises.mkdir(logDir, { recursive: true });
-                }
+                await fsPromises.mkdir(logDir, { recursive: true });
                 this.logDirExist.add(logDir);
             }
-            await fsPromises.appendFile(logFile, logEntry, 'utf8');
+
+            if (!this.logStreams.has(logFile)) {
+                const gzip = zlib.createGzip();
+                const fileStream = fs.createWriteStream(logFile, { flags: 'a' });
+                gzip.pipe(fileStream);
+                this.logStreams.set(logFile, gzip);
+            }
+            const gzipStream = this.logStreams.get(logFile);
+            gzipStream.write(logEntry);
         } catch (error) {
             this.logger.error('Failed to save log:', error);
         }
@@ -824,11 +838,21 @@ class UserDataManager {
     clearAll() {
         const usersToSave = this.users;
         const saveStartTime = this.startTime;
+        const logDir = path.join('./logs', String(this.startTime));
+        const logFile = path.join(logDir, 'fight.log.gz');
+        const gzipStream = this.logStreams.get(logFile);
+
         this.users = new Map();
         this.startTime = Date.now();
         this.lastAutoSaveTime = 0;
         this.lastLogTime = 0;
         this.saveAllUserData(usersToSave, saveStartTime);
+
+        // 关闭日志流
+        gzipStream.end();
+        gzipStream.on('close', () => {
+            this.logStreams.delete(logFile);
+        });
     }
 
     /** 获取用户列表 */
@@ -995,13 +1019,11 @@ async function main() {
 
     // 进程退出时保存用户缓存
     process.on('SIGINT', async () => {
-        console.log('\nSaving user cache...');
         await userDataManager.forceUserCacheSave();
         process.exit(0);
     });
 
     process.on('SIGTERM', async () => {
-        console.log('\nSaving user cache...');
         await userDataManager.forceUserCacheSave();
         process.exit(0);
     });
@@ -1183,6 +1205,17 @@ async function main() {
     app.get('/api/history/:timestamp/download', async (req, res) => {
         const { timestamp } = req.params;
         const historyFilePath = path.join('./logs', timestamp, 'fight.log');
+        const historyGzipFilePath = path.join('./logs', timestamp, 'fight.log.gz');
+        try {
+            await fsPromises.access(historyGzipFilePath);
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="fight_${timestamp}.log"`);
+            res.setHeader('Content-Encoding', 'gzip');
+
+            const stream = fs.createReadStream(historyGzipFilePath);
+            stream.pipe(res);
+            return;
+        } catch (e) {}
         res.download(historyFilePath, `fight_${timestamp}.log`);
     });
 
