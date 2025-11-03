@@ -449,6 +449,7 @@
             let isUpdatingFromLegend = false; // 防止图例事件和控制面板事件相互触发
             let currentUserArray = []; // 缓存当前用户数组用于查找用户名
             let lastEnemySignature = '';
+            let cellsCache = new Map();
 
             // y轴动态调整相关变量
             const Y_AXIS_FLOOR_MIN = 10000;
@@ -1133,7 +1134,7 @@
             // 多用户性能优化配置
             const CHART_CONFIG = {
                 MAX_VISIBLE_USERS: 20, // 最多同时显示的用户数
-                PERFORMANCE_MODE_THRESHOLD: 15, // 超过此数量启用性能模式
+                PERFORMANCE_MODE_THRESHOLD: 5, // 超过此数量启用性能模式
                 UPDATE_INTERVAL_NORMAL: 33, // 正常模式更新间隔(30fps)
                 UPDATE_INTERVAL_PERFORMANCE: 100, // 性能模式更新间隔(10fps)
                 DATA_POINT_LIMIT: 300, // 性能模式下的数据点限制(30秒)
@@ -1588,6 +1589,7 @@
                 existingRows = damageTable.querySelectorAll('tr');
 
                 for (let i = 0; i < visibleUserArray.length; i++) {
+                    const cachedCell = cellsCache.get(i) || { uid: 0, name: '', otherCells: [] };
                     const user = visibleUserArray[i];
                     const crit_rate = user.total_count.critical / user.total_count.total;
                     const lucky_rate = user.total_count.lucky / user.total_count.total;
@@ -1656,14 +1658,14 @@
                     // 更新单元格内容
                     existingCells.forEach((cell, index) => {
                         if (index < 2) return;
-                        if (otherCells[index - 2] !== undefined) {
+                        if (otherCells[index - 2] !== undefined && otherCells[index - 2] !== cachedCell.otherCells[index - 2]) {
                             cell.textContent = otherCells[index - 2];
                         }
                     });
 
                     // 角色ID列
                     const uidCell = existingCells[0];
-                    uidCell.textContent = `${user.id}`;
+                    if (user.id !== cachedCell.uid) uidCell.textContent = `${user.id}`;
 
                     // 角色昵称列
                     const nicknameCell = existingCells[1];
@@ -1671,7 +1673,8 @@
                     const hasValidName = user.name && user.name.trim() !== '';
                     const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
 
-                    nicknameCell.textContent = nickname;
+                    if (nickname !== cachedCell.name) nicknameCell.textContent = nickname;
+                    cellsCache.set(i, { uid: user.id, name: nickname, otherCells: otherCells });
                     const operationCell = existingCells[existingCells.length - 1];
                     if (operationCell.querySelector('.skill-btn')) {
                         // 如果已经存在技能按钮，则只更新用户ID
@@ -1698,7 +1701,7 @@
                         operationDiv.appendChild(skillButton);
                     }
                 }
-                updateTableStickyHeader();
+                setTimeout(() => updateTableStickyHeader(), 0);
                 // 应用列显示设置
                 if (typeof applyColumnVisibility === 'function') {
                     applyColumnVisibility();
@@ -1782,6 +1785,7 @@
                 userPriorityCache = {};
                 userColorMap = {}; // 清空颜色映射
                 currentUserArray = []; // 清空当前用户数组缓存
+                cellsCache.clear();
                 lastUpdateTime = 0; // 重置图表更新时间
                 performanceMode = false;
                 updateEnemyDisplay({});
@@ -2152,22 +2156,25 @@
             // DPS历史数据管理 - 保持数据真实性
             function updateDpsHistory(userArray) {
                 const currentTime = Date.now();
+                // 保持最多60秒的数据
+                const cutoffTime = currentTime - 60000; // 60秒前
 
                 for (const user of userArray) {
-                    if (!dpsHistory[user.id]) {
-                        dpsHistory[user.id] = [];
+                    let history = dpsHistory[user.id];
+                    if (!history) {
+                        history = dpsHistory[user.id] = [];
                     }
 
-                    // 只记录真实的DPS数据，不进行人工平滑
-                    dpsHistory[user.id].push({
+                    // 添加最新数据
+                    history.push({
                         time: currentTime,
                         dps: user.realtime_dps,
                         isActive: user.realtime_dps > 0, // 标记是否在活跃输出
                     });
 
-                    // 保持最多60秒的数据
-                    const cutoffTime = currentTime - 60000; // 60秒前
-                    dpsHistory[user.id] = dpsHistory[user.id].filter((point) => point.time > cutoffTime);
+                    while (history.length && history[0].time <= cutoffTime) {
+                        history.shift();
+                    }
                 }
             }
 
