@@ -2793,6 +2793,7 @@
                         isUpdatingFromLegend = false;
                     }, 100);
                 }
+                cellsCache.clear();
             }
 
             // 全选/取消全选
@@ -2849,6 +2850,7 @@
                     }, 200);
                 }
 
+                cellsCache.clear();
                 // 触发数据更新，重新渲染表格
                 fetchData();
             }
