@@ -1530,6 +1530,8 @@
                         ...data.user[id],
                     }));
 
+                    if (userArray.length <= 1) cellsCache.clear();
+
                     // 缓存当前用户数组
                     currentUserArray = userArray;
 

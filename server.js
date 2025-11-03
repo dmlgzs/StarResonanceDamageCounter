@@ -858,11 +858,13 @@ class UserDataManager {
         this.lastLogTime = 0;
         this.saveAllUserData(usersToSave, saveStartTime);
 
-        // 关闭日志流
-        gzipStream.end();
-        gzipStream.on('close', () => {
-            this.logStreams.delete(logFile);
-        });
+        if (gzipStream) {
+            // 关闭日志流
+            gzipStream.end();
+            gzipStream.on('close', () => {
+                this.logStreams.delete(logFile);
+            });
+        }
     }
 
     /** 获取用户列表 */
