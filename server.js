@@ -496,6 +496,7 @@ class UserDataManager {
             hp: new Map(),
             maxHp: new Map(),
         };
+        this.maxHpMonster = '';
 
         // 自动保存
         this.lastAutoSaveTime = 0;
@@ -829,6 +830,15 @@ class UserDataManager {
 
     /** 清空敌方缓存 */
     refreshEnemyCache() {
+        let maxHpMonsterId = 0;
+        for (const [id, hp] of this.enemyCache.maxHp.entries()) {
+            if (!maxHpMonsterId || hp > this.enemyCache.maxHp.get(maxHpMonsterId)) {
+                maxHpMonsterId = id;
+            }
+        }
+        if (maxHpMonsterId && this.enemyCache.name.has(maxHpMonsterId)) {
+            this.maxHpMonster = this.enemyCache.name.get(maxHpMonsterId);
+        }
         this.enemyCache.name.clear();
         this.enemyCache.hp.clear();
         this.enemyCache.maxHp.clear();
@@ -887,8 +897,9 @@ class UserDataManager {
                 }
             }
             if (maxHpMonsterId && this.enemyCache.name.has(maxHpMonsterId)) {
-                summary.maxHpMonster = this.enemyCache.name.get(maxHpMonsterId);
+                summary.maxHpMonster = this.maxHpMonster = this.enemyCache.name.get(maxHpMonsterId);
             }
+            if (!summary.maxHpMonster) summary.maxHpMonster = this.maxHpMonster;
 
             const allUsersData = {};
             const userDatas = new Map();
