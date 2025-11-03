@@ -899,9 +899,12 @@ class UserDataManager {
                 }
             }
             if (maxHpMonsterId && this.enemyCache.name.has(maxHpMonsterId)) {
-                summary.maxHpMonster = this.maxHpMonster = this.enemyCache.name.get(maxHpMonsterId);
+                summary.maxHpMonster = this.enemyCache.name.get(maxHpMonsterId);
             }
-            if (!summary.maxHpMonster) summary.maxHpMonster = this.maxHpMonster;
+            if (!summary.maxHpMonster) {
+                summary.maxHpMonster = this.maxHpMonster;
+                this.maxHpMonster = '';
+            }
 
             const allUsersData = {};
             const userDatas = new Map();
