@@ -22,7 +22,7 @@ const { exec } = require('child_process');
 const findDefaultNetworkDevice = require('./algo/netInterfaceUtil');
 
 const skillConfig = require('./tables/skill_names_new.json');
-const VERSION = '3.3.3';
+const VERSION = '3.3.5';
 const SETTINGS_PATH = path.join('./settings.json');
 let globalSettings = {
     autoClearOnServerChange: true,
