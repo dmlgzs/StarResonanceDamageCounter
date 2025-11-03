@@ -2999,54 +2999,49 @@
                 ]);
                 content.appendChild(baseGroup);
 
-                // 根据当前数据组显示相应的列设置
-                if (currentDataGroup === 'damage' || currentDataGroup === 'all') {
-                    // 伤害数据组
-                    const damageOptions = [{ id: 'totalDamage', label: translations.totalDamage || '总伤害', column: 'totalDamage' }];
+                // 伤害数据组
+                const damageOptions = [{ id: 'totalDamage', label: translations.totalDamage || '总伤害', column: 'totalDamage' }];
 
-                    if (!isSimpleMode) {
-                        damageOptions.push(
-                            { id: 'pureCrit', label: translations.pureCrit || '纯暴击', column: 'pureCrit' },
-                            { id: 'pureLucky', label: translations.pureLucky || '纯幸运', column: 'pureLucky' },
-                            { id: 'critLucky', label: translations.critLucky || '暴击幸运', column: 'critLucky' },
-                        );
-                    }
-
-                    const damageGroup = createColumnGroup(translations.damageData || '⚔️ 伤害数据', damageOptions);
-                    content.appendChild(damageGroup);
-
-                    // DPS数据组
-                    const dpsGroup = createColumnGroup(translations.dpsData || '⚡ DPS数据', [
-                        { id: 'realtimeDps', label: translations.instantDps || '瞬时DPS', column: 'realtimeDps' },
-                        { id: 'realtimeDpsMax', label: translations.maxInstant || '最大瞬时', column: 'realtimeDpsMax' },
-                        { id: 'dps', label: translations.totalDps || '总DPS', column: 'dps' },
-                    ]);
-                    content.appendChild(dpsGroup);
+                if (!isSimpleMode) {
+                    damageOptions.push(
+                        { id: 'pureCrit', label: translations.pureCrit || '纯暴击', column: 'pureCrit' },
+                        { id: 'pureLucky', label: translations.pureLucky || '纯幸运', column: 'pureLucky' },
+                        { id: 'critLucky', label: translations.critLucky || '暴击幸运', column: 'critLucky' },
+                    );
                 }
 
-                if (currentDataGroup === 'healing' || currentDataGroup === 'all') {
-                    // 治疗数据组
-                    const healingOptions = [{ id: 'totalHealing', label: translations.totalHealing || '总治疗', column: 'totalHealing' }];
+                const damageGroup = createColumnGroup(translations.damageData || '⚔️ 伤害数据', damageOptions);
+                content.appendChild(damageGroup);
 
-                    if (!isSimpleMode) {
-                        healingOptions.push(
-                            { id: 'healingPureCrit', label: translations.pureCrit || '纯暴击', column: 'healingPureCrit' },
-                            { id: 'healingPureLucky', label: translations.pureLucky || '纯幸运', column: 'healingPureLucky' },
-                            { id: 'healingCritLucky', label: translations.critLucky || '暴击幸运', column: 'healingCritLucky' },
-                        );
-                    }
+                // DPS数据组
+                const dpsGroup = createColumnGroup(translations.dpsData || '⚡ DPS数据', [
+                    { id: 'realtimeDps', label: translations.instantDps || '瞬时DPS', column: 'realtimeDps' },
+                    { id: 'realtimeDpsMax', label: translations.maxInstant || '最大瞬时', column: 'realtimeDpsMax' },
+                    { id: 'dps', label: translations.totalDps || '总DPS', column: 'dps' },
+                ]);
+                content.appendChild(dpsGroup);
 
-                    const healingGroup = createColumnGroup(translations.healingData || '❤️ 治疗数据', healingOptions);
-                    content.appendChild(healingGroup);
+                // 治疗数据组
+                const healingOptions = [{ id: 'totalHealing', label: translations.totalHealing || '总治疗', column: 'totalHealing' }];
 
-                    // HPS数据组
-                    const hpsGroup = createColumnGroup(translations.hpsData || '💚 HPS数据', [
-                        { id: 'realtimeHps', label: translations.instantHps || '瞬时HPS', column: 'realtimeHps' },
-                        { id: 'realtimeHpsMax', label: translations.maxInstantHps || '最大瞬时', column: 'realtimeHpsMax' },
-                        { id: 'hps', label: translations.totalHps || '总HPS', column: 'hps' },
-                    ]);
-                    content.appendChild(hpsGroup);
+                if (!isSimpleMode) {
+                    healingOptions.push(
+                        { id: 'healingPureCrit', label: translations.pureCrit || '纯暴击', column: 'healingPureCrit' },
+                        { id: 'healingPureLucky', label: translations.pureLucky || '纯幸运', column: 'healingPureLucky' },
+                        { id: 'healingCritLucky', label: translations.critLucky || '暴击幸运', column: 'healingCritLucky' },
+                    );
                 }
+
+                const healingGroup = createColumnGroup(translations.healingData || '❤️ 治疗数据', healingOptions);
+                content.appendChild(healingGroup);
+
+                // HPS数据组
+                const hpsGroup = createColumnGroup(translations.hpsData || '💚 HPS数据', [
+                    { id: 'realtimeHps', label: translations.instantHps || '瞬时HPS', column: 'realtimeHps' },
+                    { id: 'realtimeHpsMax', label: translations.maxInstantHps || '最大瞬时', column: 'realtimeHpsMax' },
+                    { id: 'hps', label: translations.totalHps || '总HPS', column: 'hps' },
+                ]);
+                content.appendChild(hpsGroup);
 
                 // 其他组
                 const otherGroup = createColumnGroup(translations.otherSettings || '🔧 其他', [
