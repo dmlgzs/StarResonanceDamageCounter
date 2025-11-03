@@ -161,7 +161,9 @@
         "chartStatusText": "Showing {visibleCount}/{totalCount} users",
         "skillValueDistribution": "{typeLabel} Skill Value Distribution",
         "skillValue": "{typeLabel} Skill Value",
-        "skillCritAndLuckyRate": "{typeLabel} Skill Critical and Lucky Trigger Rate"
+        "skillCritAndLuckyRate": "{typeLabel} Skill Critical and Lucky Trigger Rate",
+        "unknownHP": "HP Unknown",
+        "defeated": "Defeated"
     },
     "professions": {
         "未知": "Unknown",
@@ -203,6 +205,7 @@
         "暴击率": "Crit Rate",
         "幸运触发率": "Lucky Trigger Rate",
         "百分比": "Percentage",
+        "未知敌人": "Unknown",
         "----SKILL ELEMENT----": "--------", 
         "⚔️物": "⚔️None",
         "🔥火": "🔥Fire",

@@ -1479,8 +1479,13 @@
                     const fillColor =
                         enemy.maxHp > 0 ? (enemy.hp <= 0 ? 'rgba(127, 140, 141, 0.35)' : 'rgba(231, 76, 60, 0.32)') : 'rgba(231, 76, 60, 0.18)';
                     const currentHp = Math.max(0, enemy.hp);
-                    const hpDisplay = `${formatNumber(currentHp)} / ${enemy.maxHp > 0 ? formatNumber(enemy.maxHp) : '未知'}`;
-                    const statusText = enemy.maxHp > 0 ? (enemy.hp <= 0 ? '已击败' : `${percent.toFixed(1)}%`) : '血量未知';
+                    const hpDisplay = `${formatNumber(currentHp)} / ${enemy.maxHp > 0 ? formatNumber(enemy.maxHp) : translations.unknown || '未知'}`;
+                    const statusText =
+                        enemy.maxHp > 0
+                            ? enemy.hp <= 0
+                                ? translations.defeated || '已击败'
+                                : `${percent.toFixed(1)}%`
+                            : translations.unknownHP || '血量未知';
                     const statusClass = enemy.maxHp > 0 && enemy.hp <= 0 ? 'enemy-status defeated' : 'enemy-status';
 
                     const item = document.createElement('div');

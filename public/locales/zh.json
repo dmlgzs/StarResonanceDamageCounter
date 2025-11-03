@@ -161,7 +161,9 @@
         "chartStatusText": "显示 {visibleCount}/{totalCount} 用户",
         "skillValueDistribution": "{typeLabel}技能数值分布",
         "skillValue": "{typeLabel}技能数值",
-        "skillCritAndLuckyRate": "{typeLabel}技能暴击率与幸运触发率"
+        "skillCritAndLuckyRate": "{typeLabel}技能暴击率与幸运触发率",
+        "unknownHP": "血量未知",
+        "defeated": "已击败"
     },
     "professions": {
         "未知": "未知",
@@ -203,6 +205,7 @@
         "暴击率": "暴击率",
         "幸运触发率": "幸运触发率",
         "百分比": "百分比",
+        "未知敌人": "未知敌人",
         "----SKILL ELEMENT----": "--------", 
         "⚔️物": "⚔️物",
         "🔥火": "🔥火",
