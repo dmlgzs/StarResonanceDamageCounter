@@ -449,7 +449,7 @@
             let isUpdatingFromLegend = false; // 防止图例事件和控制面板事件相互触发
             let currentUserArray = []; // 缓存当前用户数组用于查找用户名
             let lastEnemySignature = '';
-            let cellsCache = new Map();
+            let cellsCache = [];
 
             // y轴动态调整相关变量
             const Y_AXIS_FLOOR_MIN = 10000;
@@ -1409,7 +1409,7 @@
                     }
 
                     lastVisiableUserArray = visibleUserArray;
-                    cellsCache.clear();
+                    cellsCache.length = 0;
                     updateTables(visibleUserArray);
                 }
             }
@@ -1530,7 +1530,7 @@
                         ...data.user[id],
                     }));
 
-                    if (userArray.length <= 1) cellsCache.clear();
+                    if (userArray.length <= 1) cellsCache.length = 0;
 
                     // 缓存当前用户数组
                     currentUserArray = userArray;
@@ -1596,8 +1596,9 @@
                 }
                 existingRows = damageTable.querySelectorAll('tr');
 
+                if (cellsCache.length > visibleUserArray.length) cellsCache.length = visibleUserArray.length;
                 for (let i = 0; i < visibleUserArray.length; i++) {
-                    const cachedCell = cellsCache.get(i) || { uid: 0, name: '', otherCells: [] };
+                    const cachedCell = cellsCache[i] || { uid: 0, name: '', otherCells: [] };
                     const user = visibleUserArray[i];
                     const crit_rate = user.total_count.critical / user.total_count.total;
                     const lucky_rate = user.total_count.lucky / user.total_count.total;
@@ -1682,7 +1683,7 @@
                     const nickname = userNicknames[user.id] || (hasValidName ? user.name : '');
 
                     if (nickname !== cachedCell.name) nicknameCell.textContent = nickname;
-                    cellsCache.set(i, { uid: user.id, name: nickname, otherCells: otherCells });
+                    cellsCache[i] = { uid: user.id, name: nickname, otherCells: otherCells };
                     const operationCell = existingCells[existingCells.length - 1];
                     if (operationCell.querySelector('.skill-btn')) {
                         // 如果已经存在技能按钮，则只更新用户ID
@@ -1793,7 +1794,7 @@
                 userPriorityCache = {};
                 userColorMap = {}; // 清空颜色映射
                 currentUserArray = []; // 清空当前用户数组缓存
-                cellsCache.clear();
+                cellsCache.length = 0;
                 lastUpdateTime = 0; // 重置图表更新时间
                 performanceMode = false;
                 updateEnemyDisplay({});
@@ -2796,7 +2797,7 @@
                         isUpdatingFromLegend = false;
                     }, 100);
                 }
-                cellsCache.clear();
+                cellsCache.length = 0;
             }
 
             // 全选/取消全选
@@ -2853,7 +2854,7 @@
                     }, 200);
                 }
 
-                cellsCache.clear();
+                cellsCache.length = 0;
                 // 触发数据更新，重新渲染表格
                 fetchData();
             }
