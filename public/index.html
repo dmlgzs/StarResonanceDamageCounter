@@ -36,7 +36,7 @@
         <button class="main-button" onclick="openHpWindow()" data-i18n="hpMonitor">❤️ 血条监控</button>
         <button class="main-button" onclick="toggleHistoryModal()" data-i18n="historyData">📜 历史数据</button>
         <button class="main-button" onclick="toggleDarkMode()" data-i18n="darkMode">🌙 夜间模式</button>
-        <button class="main-button" onclick="toggleSimpleMode()" data-i18n="simpleMode">📋 简洁模式</button>
+        <button class="main-button" onclick="toggleSimpleMode()" data-i18n="simpleMode" style="display: none">📋 简洁模式</button>
         <button class="main-button" onclick="toggleControlsModal()" data-i18n="userManagement">👤 用户管理</button>
         <button class="main-button" onclick="toggleSettingsModal()" data-i18n="statsSettings">⚙️ 统计设置</button>
 
@@ -2047,6 +2047,7 @@
             }
 
             function initSimpleMode() {
+                return; //deprecated
                 const isSimpleMode = localStorage.getItem('simpleMode') === 'true';
                 const body = document.body;
                 const button = document.querySelector('button[onclick="toggleSimpleMode()"]');
