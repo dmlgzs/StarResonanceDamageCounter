@@ -1026,7 +1026,7 @@
                     console.log(data);
                     return {
                         timestamp: timestamp,
-                        name: `${data.data.maxHpMonster || ''} ${data.data.userCount}${getTranslationByReplace('人')} ${new Date(data.data.startTime).toLocaleString()} ➡ ${new Date(data.data.endTime).toLocaleString()}`,
+                        name: `${getTranslationByReplace(data.data.maxHpMonster || '')} (${data.data.userCount}${getTranslationByReplace('人')}) ${new Date(data.data.startTime).toLocaleString()} ➡ ${new Date(data.data.endTime).toLocaleString()}`,
                     };
                 } catch (err) {
                     console.error('获取历史列表失败：', err);
