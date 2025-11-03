@@ -1249,8 +1249,7 @@
             }
 
             // 用户优先级计算 - 基于DPS和活跃度
-            function calculateUserPriority(userId, userArray) {
-                const user = userArray.find((u) => u.id.toString() === userId);
+            function calculateUserPriority(userId, user) {
                 if (!user) return 0;
 
                 const dpsScore = user.realtime_dps_max || 0;
@@ -1265,17 +1264,23 @@
 
             // 获取优先显示的用户列表
             function getTopPriorityUsers(userArray, maxCount) {
-                const userIds = Object.keys(dpsHistory).filter(
-                    (userId) => visibleUsers[userId] !== false && dpsHistory[userId] && dpsHistory[userId].length > 0,
-                );
+                const userIds = new Set();
+                for (const userId in dpsHistory) {
+                    if (visibleUsers[userId] !== false && dpsHistory[userId] && dpsHistory[userId].length > 0) {
+                        userIds.add(userId);
+                    }
+                }
 
                 // 计算并缓存优先级
-                userIds.forEach((userId) => {
-                    userPriorityCache[userId] = calculateUserPriority(userId, userArray);
-                });
+                for (const user of userArray) {
+                    if (!userIds.has(user.id)) continue;
+                    userPriorityCache[userId] = calculateUserPriority(userId, user);
+                }
 
                 // 按优先级排序并限制数量
-                return userIds.sort((a, b) => userPriorityCache[b] - userPriorityCache[a]).slice(0, maxCount);
+                return Array.from(userIds)
+                    .sort((a, b) => userPriorityCache[b] - userPriorityCache[a])
+                    .slice(0, maxCount);
             }
 
             // WebSocket连接初始化
