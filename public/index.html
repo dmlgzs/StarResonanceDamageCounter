@@ -29,7 +29,7 @@
         >
             🌐 中 / EN
         </button>
-        <h1 id="appTitle"><span data-i18n="appTitle">🎯 星痕共鸣实时战斗数据展示</span><span id="appVersion"></span></h1>
+        <h1 id="appTitle"><span data-i18n="appTitle">🎯 星痕共鸣实时战斗数据展示</span></h1>
         <div style="margin: 20px 0"></div>
         <button class="main-button" onclick="clearData()" data-i18n="clearData">🗑️ 清空数据</button>
         <button class="main-button" id="pauseButton" onclick="togglePause()" data-i18n="pauseStats">⏸️ 暂停统计</button>
@@ -425,7 +425,8 @@
         </div>
 
         <footer style="margin-top: 40px; font-size: 14px; color: #888">
-            <span>© 2025 Made with ❤️ by </span>
+            <span id="appVersion"></span>
+            <span> | © 2025 Made with ❤️ by </span>
             <a href="https://github.com/dmlgzs/" target="_blank">Dimole</a>
             <span> and </span>
             <a href="https://github.com/dmlgzs/StarResonanceDamageCounter/graphs/contributors" target="_blank">Other Contributors</a>
@@ -491,7 +492,7 @@
             let isChartVisible = true;
 
             // 版本检查相关变量
-            const CURRENT_VERSION = '3.3.5';
+            const CURRENT_VERSION = '3.3.6';
             const GITHUB_REPO = 'dmlgzs/StarResonanceDamageCounter';
             const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
 
