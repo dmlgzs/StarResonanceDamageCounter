@@ -232,7 +232,8 @@ const isUuidPlayer = (uuid) => {
 };
 
 const isUuidMonster = (uuid) => {
-    return (uuid.toBigInt() & 0xffffn) === 64n;
+    const low = uuid.toBigInt() & 0xffffn;
+    return low === 64n || low === 32832n;
 };
 
 const doesStreamHaveIdentifier = (reader) => {
@@ -274,6 +275,7 @@ class PacketProcessor {
 
         let targetUuid = aoiSyncDelta.Uuid;
         if (!targetUuid) return;
+        const tgtUuid = targetUuid.toString();
         const isTargetPlayer = isUuidPlayer(targetUuid);
         const isTargetMonster = isUuidMonster(targetUuid);
         targetUuid = targetUuid.shiftRight(16);
@@ -283,7 +285,7 @@ class PacketProcessor {
             if (isTargetPlayer) {
                 this._processPlayerAttrs(targetUuid.toNumber(), attrCollection.Attrs);
             } else if (isTargetMonster) {
-                this._processEnemyAttrs(targetUuid.toNumber(), attrCollection.Attrs);
+                this._processEnemyAttrs(tgtUuid, targetUuid.toNumber(), attrCollection.Attrs);
             }
         }
 
@@ -303,6 +305,7 @@ class PacketProcessor {
             if (!skillId) continue;
 
             let attackerUuid = syncDamageInfo.TopSummonerId || syncDamageInfo.AttackerUuid;
+            const atkUuid = attackerUuid.toString();
             if (!attackerUuid) continue;
             const isAttackerPlayer = isUuidPlayer(attackerUuid);
             attackerUuid = attackerUuid.shiftRight(16);
@@ -370,7 +373,7 @@ class PacketProcessor {
                     }
                 }
                 if (isDead) {
-                    this.userDataManager.enemyCache.hp.set(targetUuid.toNumber(), 0);
+                    this.userDataManager.enemyCache.hp.set(tgtUuid, 0);
                 }
             }
 
@@ -390,8 +393,8 @@ class PacketProcessor {
                 }
                 infoStr += `#${attackerUuid.toString()}(player)`;
             } else {
-                if (this.userDataManager.enemyCache.name.has(attackerUuid.toNumber())) {
-                    infoStr += this.userDataManager.enemyCache.name.get(attackerUuid.toNumber());
+                if (this.userDataManager.enemyCache.name.has(atkUuid)) {
+                    infoStr += this.userDataManager.enemyCache.name.get(atkUuid);
                 }
                 infoStr += `#${attackerUuid.toString()}(enemy)`;
             }
@@ -404,8 +407,8 @@ class PacketProcessor {
                 }
                 targetName += `#${targetUuid.toString()}(player)`;
             } else {
-                if (this.userDataManager.enemyCache.name.has(targetUuid.toNumber())) {
-                    targetName += this.userDataManager.enemyCache.name.get(targetUuid.toNumber());
+                if (this.userDataManager.enemyCache.name.has(tgtUuid)) {
+                    targetName += this.userDataManager.enemyCache.name.get(tgtUuid);
                 }
                 targetName += `#${targetUuid.toString()}(enemy)`;
             }
@@ -632,32 +635,32 @@ class PacketProcessor {
         }
     }
 
-    _processEnemyAttrs(enemyUid, attrs) {
+    _processEnemyAttrs(enemyUuid, enemyUid, attrs) {
         for (const attr of attrs) {
             if (!attr.Id || !attr.RawData) continue;
             const reader = pbjs.Reader.create(attr.RawData);
-            this.logger.debug(`Found attrId ${attr.Id} for E${enemyUid} ${attr.RawData.toString('base64')}`);
+            this.logger.debug(`Found attrId ${attr.Id} for ${enemyUuid} E${enemyUid} ${attr.RawData.toString('base64')}`);
             switch (attr.Id) {
                 case AttrType.AttrName:
                     const enemyName = reader.string();
-                    this.userDataManager.enemyCache.name.set(enemyUid, enemyName);
-                    this.logger.info(`Found monster name ${enemyName} for id ${enemyUid}`);
+                    this.userDataManager.enemyCache.name.set(enemyUuid, enemyName);
+                    this.logger.info(`Found monster name ${enemyName} for id ${enemyUid} uuid ${enemyUuid}`);
                     break;
                 case AttrType.AttrId:
                     const attrId = reader.int32();
                     const name = monsterNames[attrId];
                     if (name) {
-                        this.logger.info(`Found moster name ${name} for id ${enemyUid}`);
-                        this.userDataManager.enemyCache.name.set(enemyUid, name);
+                        this.logger.info(`Found moster name ${name} for id ${enemyUid} uuid ${enemyUuid}`);
+                        this.userDataManager.enemyCache.name.set(enemyUuid, name);
                     }
                     break;
                 case AttrType.AttrHp:
                     const enemyHp = reader.int32();
-                    this.userDataManager.enemyCache.hp.set(enemyUid, enemyHp);
+                    this.userDataManager.enemyCache.hp.set(enemyUuid, enemyHp);
                     break;
                 case AttrType.AttrMaxHp:
                     const enemyMaxHp = reader.int32();
-                    this.userDataManager.enemyCache.maxHp.set(enemyUid, enemyMaxHp);
+                    this.userDataManager.enemyCache.maxHp.set(enemyUuid, enemyMaxHp);
                     break;
                 default:
                     // this.logger.debug(`Found unknown attrId ${attr.Id} for E${enemyUid} ${attr.RawData.toString('base64')}`);
@@ -675,7 +678,7 @@ class PacketProcessor {
                 if (entityUuid && isUuidMonster(entityUuid)) {
                     const entityUid = entityUuid.shiftRight(16).toNumber();
                     if (entity.Type == pb.EDisappearType.EDisappearDead) {
-                        this.userDataManager.enemyCache.hp.set(entityUid, 0);
+                        this.userDataManager.enemyCache.hp.set(entityUuid, 0);
                     }
                 }
             }
@@ -690,7 +693,7 @@ class PacketProcessor {
             if (attrCollection && attrCollection.Attrs) {
                 switch (entity.EntType) {
                     case pb.EEntityType.EntMonster:
-                        this._processEnemyAttrs(entityUid, attrCollection.Attrs);
+                        this._processEnemyAttrs(entityUuid.toString(), entityUid, attrCollection.Attrs);
                         break;
                     case pb.EEntityType.EntChar:
                         this._processPlayerAttrs(entityUid, attrCollection.Attrs);

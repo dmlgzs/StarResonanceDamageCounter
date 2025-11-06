@@ -1438,11 +1438,12 @@
                 if (!enemyCard || !enemyList) return;
 
                 const entries = Object.entries(enemyData || {});
-                const parsed = entries.map(([id, info]) => {
+                const parsed = entries.map(([_, info]) => {
                     const name =
                         info && typeof info.name === 'string' && info.name.trim().length > 0
                             ? info.name.trim()
                             : translations.unknownEnemy || '未知敌人';
+                    const id = Number(info?.id ?? 0);
                     const hp = Number(info?.hp ?? 0);
                     const maxHp = Number(info?.max_hp ?? 0);
                     return {

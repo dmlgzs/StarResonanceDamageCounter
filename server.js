@@ -813,6 +813,7 @@ class UserDataManager {
         const enemyIds = new Set([...this.enemyCache.name.keys(), ...this.enemyCache.hp.keys(), ...this.enemyCache.maxHp.keys()]);
         enemyIds.forEach((id) => {
             result[id] = {
+                id: (BigInt(id) >> 16n).toString(),
                 name: this.enemyCache.name.get(id),
                 hp: this.enemyCache.hp.get(id),
                 max_hp: this.enemyCache.maxHp.get(id),
@@ -892,7 +893,7 @@ class UserDataManager {
                 maxHpMonster: '',
             };
 
-            let maxHpMonsterId = 0;
+            let maxHpMonsterId = '';
             for (const [id, hp] of this.enemyCache.maxHp.entries()) {
                 if (!maxHpMonsterId || hp > this.enemyCache.maxHp.get(maxHpMonsterId)) {
                     maxHpMonsterId = id;
