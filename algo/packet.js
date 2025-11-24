@@ -305,8 +305,8 @@ class PacketProcessor {
             if (!skillId) continue;
 
             let attackerUuid = syncDamageInfo.TopSummonerId || syncDamageInfo.AttackerUuid;
-            const atkUuid = attackerUuid.toString();
             if (!attackerUuid) continue;
+            const atkUuid = attackerUuid.toString();
             const isAttackerPlayer = isUuidPlayer(attackerUuid);
             attackerUuid = attackerUuid.shiftRight(16);
 
@@ -791,7 +791,7 @@ class PacketProcessor {
                 }
             } while (packetsReader.remaining() > 0);
         } catch (e) {
-            this.logger.error(`Fail while parsing data for player ${currentUserUuid.shiftRight(16)}.\nErr: ${e}`);
+            this.logger.error(`Fail while parsing data for player ${currentUserUuid.shiftRight(16)}.\nErr: ${e} ${e.stack}`);
         }
     }
 }
