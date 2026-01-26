@@ -14,6 +14,8 @@ function getSystemLanguage() {
         'en-GB': 'en',
         'en-CA': 'en',
         'en-AU': 'en',
+        ko: 'ko',
+        'ko-KR': 'ko',
     };
 
     if (langMap[browserLang]) {
@@ -37,6 +39,7 @@ let translation_professions = {};
 const supportedLanguages = [
     { code: 'zh', name: '中文' },
     { code: 'en', name: 'English' },
+    { code: 'ko', name: '한국어' },
 ];
 
 async function loadTranslations(lang) {
