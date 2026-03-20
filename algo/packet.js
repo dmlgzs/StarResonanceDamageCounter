@@ -238,19 +238,15 @@ const isUuidMonster = (uuid) => {
 
 const doesStreamHaveIdentifier = (reader) => {
     let identifier = reader.readUInt32LE();
-    reader.readInt32();
     if (identifier !== 0xfffffffe) return false;
     identifier = reader.readInt32();
-    reader.readInt32();
     //if (identifier !== 0xfffffffd) return false;
     return true;
 };
 
 const streamReadString = (reader) => {
     const length = reader.readUInt32LE();
-    reader.readInt32();
     const buffer = reader.readBytes(length);
-    reader.readInt32();
     return buffer.toString();
 };
 
@@ -506,13 +502,11 @@ class PacketProcessor {
         if (!doesStreamHaveIdentifier(messageReader)) return;
 
         let fieldIndex = messageReader.readUInt32LE();
-        messageReader.readInt32();
         switch (fieldIndex) {
             case 2: // CharBase
                 if (!doesStreamHaveIdentifier(messageReader)) break;
 
                 fieldIndex = messageReader.readUInt32LE();
-                messageReader.readInt32();
                 switch (fieldIndex) {
                     case 5: // Name
                         const playerName = streamReadString(messageReader);
@@ -521,7 +515,6 @@ class PacketProcessor {
                         break;
                     case 35: // FightPoint
                         const fightPoint = messageReader.readUInt32LE();
-                        messageReader.readInt32();
                         this.userDataManager.setFightPoint(currentUserUuid.shiftRight(16).toNumber(), fightPoint);
                         break;
                     default:
@@ -533,7 +526,6 @@ class PacketProcessor {
                 if (!doesStreamHaveIdentifier(messageReader)) break;
 
                 fieldIndex = messageReader.readUInt32LE();
-                messageReader.readInt32();
                 switch (fieldIndex) {
                     case 1: // CurHp
                         const curHp = messageReader.readUInt32LE();
@@ -552,11 +544,9 @@ class PacketProcessor {
                 if (!doesStreamHaveIdentifier(messageReader)) break;
 
                 fieldIndex = messageReader.readUInt32LE();
-                messageReader.readInt32();
                 switch (fieldIndex) {
                     case 1: // CurProfessionId
                         const curProfessionId = messageReader.readUInt32LE();
-                        messageReader.readInt32();
                         if (curProfessionId)
                             this.userDataManager.setProfession(currentUserUuid.shiftRight(16).toNumber(), getProfessionNameFromId(curProfessionId));
                         break;
