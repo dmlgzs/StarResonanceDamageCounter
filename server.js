@@ -113,6 +113,13 @@ function getSubProfessionBySkillId(skillId) {
         case 1934:
         case 1935:
             return '格挡';
+        case 1605:
+        case 1619:
+        case 1620:
+            return '无相';
+        case 1606:
+        case 35104:
+            return '赤红';
         default:
             return '';
     }
